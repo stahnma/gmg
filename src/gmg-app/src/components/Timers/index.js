@@ -12,7 +12,10 @@ import '../../../node_modules/font-awesome/css/font-awesome.css'
 import FlatButton from 'material-ui/FlatButton'
 import Dialog from 'material-ui/Dialog'
 import TextField from 'material-ui/TextField'
-import 'typeface-roboto'
+import '@fontsource/roboto/300.css'
+import '@fontsource/roboto/400.css'
+import '@fontsource/roboto/500.css'
+import '@fontsource/roboto/700.css'
 
 const regex = /(\d{1,2}):(\d{1,2}):(\d{1,2}):(\d{1,2})/g
 const conversions = {

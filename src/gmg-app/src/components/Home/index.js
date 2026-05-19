@@ -11,10 +11,13 @@ import Connecting from './Connecting'
 import 'react-s-alert/dist/s-alert-default.css'
 import 'react-s-alert/dist/s-alert-css-effects/bouncyflip.css'
 import './index.css'
-import 'typeface-roboto'
+import '@fontsource/roboto/300.css'
+import '@fontsource/roboto/400.css'
+import '@fontsource/roboto/500.css'
+import '@fontsource/roboto/700.css'
 import { Chart } from 'react-chartjs-2'
 import 'chartjs-plugin-streaming'
-import * as moment from 'moment'
+import moment from 'moment'
 
 const GRILL_TEMPERATURE_DATASET = 0
 const FOOD_TEMPERATURE_DATASET = 1
