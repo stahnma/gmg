@@ -1,8 +1,9 @@
 import React, { Component } from 'react'
 import PropTypes from 'prop-types'
-import { BottomNavigation, BottomNavigationItem } from 'material-ui/BottomNavigation'
-import Paper from 'material-ui/Paper'
-import FontIcon from 'material-ui/FontIcon'
+import BottomNavigation from '@mui/material/BottomNavigation'
+import BottomNavigationAction from '@mui/material/BottomNavigationAction'
+import Paper from '@mui/material/Paper'
+import HomeIcon from '@mui/icons-material/Home'
 import './index.css'
 
 export default class Navigation extends Component {
@@ -20,39 +21,18 @@ export default class Navigation extends Component {
     return this.setState({ selectedIndex: index })
   }
 
-  updateDimensions = () => {
-    this.setState({ selectedIndex: this.state.selectedIndex })
-  }
-
-  componentDidMount = () => {
-    this.updateDimensions()
-    window.addEventListener("resize", this.updateDimensions)
-  }
-
-  componentWillUnmount = () => {
-    window.removeEventListener("resize", this.updateDimensions)
-  }
-
   render() {
     return (
       <div className="navi">
-        <Paper zDepth={1}>
-          <BottomNavigation selectedIndex={this.state.selectedIndex}>
-            <BottomNavigationItem
-              label="Home"
-              icon={<FontIcon className="fa fa-home"/>}
-              onClick={() => this.select(0)}
-            />
-            {/* <BottomNavigationItem
-              label="Profiles"
-              icon={<FontIcon className="fa fa-table"/>}
-              onClick={() => this.select(1)}
-            />
-            <BottomNavigationItem
-              label="Settings"
-              icon={<FontIcon className="fa fa-cog"/>}
-              onClick={() => this.select(2)}
-            /> */}
+        <Paper elevation={1}>
+          <BottomNavigation
+            showLabels
+            value={this.state.selectedIndex}
+            onChange={(event, index) => this.select(index)}
+          >
+            <BottomNavigationAction label="Home" icon={<HomeIcon />} />
+            {/* <BottomNavigationAction label="Profiles" icon={<TableChartIcon />} />
+            <BottomNavigationAction label="Settings" icon={<SettingsIcon />} /> */}
           </BottomNavigation>
         </Paper>
       </div>
