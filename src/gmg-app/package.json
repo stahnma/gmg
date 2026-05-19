@@ -24,10 +24,10 @@
     "rimraf": "^2.6.2"
   },
   "scripts": {
-    "start": "react-scripts start",
-    "build": "react-scripts build",
+    "start": "NODE_OPTIONS=--openssl-legacy-provider react-scripts start",
+    "build": "NODE_OPTIONS=--openssl-legacy-provider react-scripts build",
     "publish": "rimraf ../gmg-server/public/app && npm run build && mv ./build ../gmg-server/public/app",
-    "test": "react-scripts test --env=jsdom"
+    "test": "NODE_OPTIONS=--openssl-legacy-provider react-scripts test --env=jsdom"
   },
   "eslintConfig": {
     "extends": "react-app"
