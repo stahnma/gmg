@@ -8,7 +8,12 @@ else
 APP=$(DOCKER_HUB_USERNAME)/$(APP_STRING)
 endif
 
-.PHONY: manifest build image push-image prepare clean test
+.PHONY: manifest build image push-image prepare clean test dev dev-deps
+
+# Local-dev orchestration (no Docker; assumes you ran `flox activate`).
+# 8080 is the real grill's port; 18080 keeps the emulator out of its way and
+# avoids clashes with anything else commonly bound to 8080 on a dev machine.
+EMU_PORT ?= 18080
 
 help: ## This help
 	@awk 'BEGIN {FS = ":.*?## "} /^[a-zA-Z_-]+:.*?## / {printf "\033[36m%-30s\033[0m %s\n", $$1, $$2}' $(MAKEFILE_LIST) | sort
@@ -46,3 +51,22 @@ test: ## Run tests for gmg-client and gmg-server
 
 clean: ## Remove manifest file and purge node_modules
 	rm -rf manifest ./src/gmg-app/node_modules ./src/gmg-client/node_modules ./src/gmg-server/node_modules ./src/gmg-server/public/app
+
+dev-deps: ## Install node + dotnet deps for the local-dev stack
+	@echo "▸ installing gmg-client deps";  cd src/gmg-client   && npm install --silent --no-audit --no-fund
+	@echo "▸ installing gmg-server deps";  cd src/gmg-server   && npm install --silent --no-audit --no-fund
+	@echo "▸ installing gmg-app deps";     cd src/gmg-app      && npm install --silent --no-audit --no-fund
+	@echo "▸ restoring gmg-emulator";      cd src/gmg-emulator && dotnet restore --verbosity quiet
+
+dev: dev-deps ## Run emulator (udp/$(EMU_PORT)) + gmg-server (3001) + Vite (3000); no Docker
+	@command -v dotnet >/dev/null || { echo "ERROR: 'dotnet' not on PATH — run 'flox activate' first"; exit 1; }
+	@command -v node   >/dev/null || { echo "ERROR: 'node' not on PATH — run 'flox activate' first";   exit 1; }
+	@echo ""
+	@echo "▸ emulator: udp/$(EMU_PORT)   server: http://localhost:3001/   ui (HMR): http://localhost:3000/"
+	@echo "▸ Ctrl-C to stop all three"
+	@echo ""
+	@trap 'kill 0' EXIT INT TERM; \
+	  ( cd src/gmg-emulator && dotnet run --no-restore -- -p $(EMU_PORT) ) & \
+	  ( cd src/gmg-server   && GMG_GRILL_HOST=127.0.0.1 GMG_GRILL_PORT=$(EMU_PORT) npm run start:dev ) & \
+	  ( cd src/gmg-app      && npm start ) & \
+	  wait
