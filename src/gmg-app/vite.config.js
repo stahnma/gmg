@@ -29,6 +29,11 @@ export default defineConfig({
     // gmg-server serves this directory statically at the site root.
     outDir: '../gmg-server/public/app',
     emptyOutDir: true,
+    // Vite's default 500 KB chunk-size warning is unrealistic for an SPA
+    // that eagerly loads MUI + Chart.js + react-toastify; current bundle
+    // is ~800 KB. 1000 KB still flags genuine future bloat regressions
+    // without nagging on every build.
+    chunkSizeWarningLimit: 1000,
   },
   server: {
     port: 3000,
@@ -40,9 +45,9 @@ export default defineConfig({
   test: {
     environment: 'jsdom',
     globals: true,
-    // The app still depends on legacy CommonJS packages (moment,
-    // material-ui 0.20, react-s-alert, ...). Pre-bundle deps so Vitest
-    // resolves CJS/ESM interop the same way the dev server and build do.
+    // Pre-bundle deps so Vitest resolves CJS/ESM interop the same way the
+    // dev server and build do (kept as a guardrail even after the Phase 2/3
+    // CJS cleanups, since legacy CJS can still creep in via transitive deps).
     deps: {
       optimizer: {
         web: { enabled: true },

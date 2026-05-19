@@ -15,13 +15,6 @@
     padding-right: 2rem;
 }
 
-.headline {
-    fontSize: 2.4rem;
-    paddingTop: 1.6rem;
-    marginBottom: 1.2rem;
-    fontWeight: 40rem;
-}
-
 .connecting-box{
     position: fixed;
     z-index: 999999;
