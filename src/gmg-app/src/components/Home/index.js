@@ -6,26 +6,30 @@ import Timers from "../Timers/index"
 import HomeControls from '../HomeControls'
 import io from 'socket.io-client'
 import GrillClient from '../../utils/GrillClient'
-import Alert from 'react-s-alert'
+import { ToastContainer, toast } from 'react-toastify'
+import 'react-toastify/dist/ReactToastify.css'
 import Connecting from './Connecting'
-import 'react-s-alert/dist/s-alert-default.css'
-import 'react-s-alert/dist/s-alert-css-effects/bouncyflip.css'
 import './index.css'
 import '@fontsource/roboto/300.css'
 import '@fontsource/roboto/400.css'
 import '@fontsource/roboto/500.css'
 import '@fontsource/roboto/700.css'
-import { Chart } from 'react-chartjs-2'
-import 'chartjs-plugin-streaming'
-import moment from 'moment'
 
 const GRILL_TEMPERATURE_DATASET = 0
 const FOOD_TEMPERATURE_DATASET = 1
+const HISTORY_WINDOW_HOURS = 8
+
+const formatAlert = ({ name, reason }) => (
+  <>
+    <strong>{name}</strong>
+    <br />
+    {reason}
+  </>
+)
 
 export default class Home extends Component {
   constructor() {
     super()
-    Chart.defaults.global.plugins.streaming.duration = 1000 * 60 * 30
     this.client = new GrillClient(window.location.origin)
     this.state = {
       datasets: [{
@@ -63,31 +67,12 @@ export default class Home extends Component {
     this.socket.on('disconnect', () => this.setState({ socketConnected: false }))
   }
 
-  getAlertOptions = (overrides = {}) => {
-    return {
-      position: 'top-right',
-      effect: 'bouncyflip',
-      timeout: 'none',
-      offset: 10,
-      ...overrides
-    }
-  }
-
   sendAlert = (alert) => {
-    const message = `<h2>${alert.name}</h2> \n${alert.reason}`
-    const options = this.getAlertOptions({ ...alert, html: true })
+    const body = formatAlert(alert)
     switch (alert.level) {
-      case 'error': {
-        Alert.error(message, options)
-        break
-      }
-      case 'warning': {
-        Alert.warning(message, options)
-        break
-      }
-      default: {
-        Alert.info(message, options)
-      }
+      case 'error':   return toast.error(body)
+      case 'warning': return toast.warning(body)
+      default:        return toast.info(body)
     }
   }
 
@@ -115,7 +100,7 @@ export default class Home extends Component {
       this.sendAlert(alert)
     })
 
-    const since = moment().subtract(8, 'hours').unix(Number)
+    const since = Math.floor((Date.now() - HISTORY_WINDOW_HOURS * 3600 * 1000) / 1000)
     this.client.getTemperatureHistory(since).then(history => {
       if (history.length === 0) return
 
@@ -158,7 +143,7 @@ export default class Home extends Component {
       await this.client.powerToggle()
     }
     catch (err) {
-      Alert.error(err.message, this.getAlertOptions())
+      toast.error(err.message)
     }
     this.setState({
       loading: !!(this.state.commandsPending - 1),
@@ -176,7 +161,7 @@ export default class Home extends Component {
       await this.client.setDesiredGrillTemp(temperature)
     }
     catch (err) {
-      Alert.error(err.message, this.getAlertOptions())
+      toast.error(err.message)
     }
     this.setState({
       loading: !!(this.state.commandsPending - 1),
@@ -194,7 +179,7 @@ export default class Home extends Component {
       await this.client.setDesiredFoodTemp(temperature)
     }
     catch (err) {
-      Alert.error(err.message, this.getAlertOptions())
+      toast.error(err.message)
     }
     this.setState({
       loading: !!(this.state.commandsPending - 1),
@@ -215,7 +200,15 @@ export default class Home extends Component {
   render() {
     return (
       <div className="container">
-        <Alert stack={{ limit: 3 }} />
+        <ToastContainer
+          position="top-right"
+          autoClose={false}
+          limit={3}
+          newestOnTop
+          closeOnClick
+          pauseOnHover
+          theme="dark"
+        />
         {!this.state.socketConnected && <Connecting />}
         <div>
           <HomeControls

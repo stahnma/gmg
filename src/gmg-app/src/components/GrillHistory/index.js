@@ -5,8 +5,11 @@ import Card from '@mui/material/Card'
 import CardMedia from '@mui/material/CardMedia'
 import Box from '@mui/material/Box'
 import Typography from '@mui/material/Typography'
-import 'chartjs-plugin-streaming'
 import logo from './logo.png'
+
+// 30-minute streaming window (was set via Chart.defaults.global in v2;
+// in v3+ realtime config lives on the scale itself).
+const STREAM_DURATION_MS = 30 * 60 * 1000
 
 export default class GrillHistory extends Component {
     render() {
@@ -29,24 +32,22 @@ export default class GrillHistory extends Component {
                         <Typography variant="body2">View grilling temperature history.</Typography>
                     </Box>
                 </Box>
-                <Line data={{
-                    datasets: this.props.datasets
-                }}
+                <Line
+                    data={{ datasets: this.props.datasets }}
                     options={{
                         scales: {
-                            xAxes: [{
+                            x: {
                                 type: 'realtime',
-                                time: { unit: 'minute' }
-                            }],
-                            tooltips: {
-                                mode: 'nearest',
-                                intersect: false
+                                time: { unit: 'minute' },
+                                realtime: { duration: STREAM_DURATION_MS }
                             },
-                            hover: {
-                                mode: 'nearest',
-                                intersect: false
-                            },
-                        }
+                            y: { type: 'linear' }
+                        },
+                        plugins: {
+                            tooltip: { mode: 'nearest', intersect: false }
+                        },
+                        // In v2 'hover' was top-level; in v3+ it became 'interaction'.
+                        interaction: { mode: 'nearest', intersect: false }
                     }}
                 />
             </Card>
