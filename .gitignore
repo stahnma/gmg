@@ -2,3 +2,4 @@
 /.idea
 /manifest
 /.env
+.DS_Store
