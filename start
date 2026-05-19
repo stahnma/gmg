@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
-# Source files from .env if availabile
-. .env
+# Source files from .env if available
+[ -f .env ] && . .env
 
 runstring='docker run -it '
 

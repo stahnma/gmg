@@ -13,9 +13,17 @@
         "pkg-path": "nodejs"
       }
     },
-    "hook": {},
+    "hook": {
+      "on-activate": "  # The Nix-built SDK lives at /nix/store/.../share/dotnet, not the\n  # OS default /usr/local/share/dotnet. The `dotnet` CLI wrapper handles\n  # that itself, but native apphost binaries produced by `dotnet build`\n  # (e.g. bin/Debug/net11.0/<name>) look up the runtime via DOTNET_ROOT\n  # and fail with \"You must install .NET to run this application\" if it\n  # is unset. Point it at the SDK this env provides.\n  if command -v dotnet >/dev/null 2>&1; then\n    DOTNET_ROOT=\"$(dirname \"$(realpath \"$(command -v dotnet)\")\")\"\n    export DOTNET_ROOT\n    # Apphosts check arch-specific vars (DOTNET_ROOT_ARM64/_X64) before\n    # DOTNET_ROOT; set them too so the lookup works on both Apple Silicon\n    # and x86_64 Linux without relying on var-precedence quirks.\n    export DOTNET_ROOT_ARM64=\"$DOTNET_ROOT\"\n    export DOTNET_ROOT_X64=\"$DOTNET_ROOT\"\n  fi\n"
+    },
     "profile": {},
-    "options": {}
+    "options": {
+      "systems": [
+        "aarch64-darwin",
+        "aarch64-linux",
+        "x86_64-linux"
+      ]
+    }
   },
   "packages": [
     {
@@ -77,35 +85,6 @@
         "out": "/nix/store/ywkwa6mnm1s49gp62jl1h0nzjwzvd68j-dotnet-sdk-wrapped-11.0.100-preview.3.26207.106"
       },
       "system": "aarch64-linux",
-      "group": "toplevel",
-      "priority": 5
-    },
-    {
-      "attr_path": "dotnet-sdk_11",
-      "broken": false,
-      "derivation": "/nix/store/hrahwbmqw8awn4ywy84nj6kybb5d70nb-dotnet-sdk-wrapped-11.0.100-preview.3.26207.106.drv",
-      "description": ".NET SDK 11.0.100-preview.3.26207.106 (wrapper)",
-      "install_id": "dotnet-sdk_11",
-      "license": "MIT",
-      "locked_url": "https://github.com/flox/nixpkgs?rev=d233902339c02a9c334e7e593de68855ad26c4cb",
-      "name": "dotnet-sdk-wrapped-11.0.100-preview.3.26207.106",
-      "pname": "dotnet-sdk_11",
-      "rev": "d233902339c02a9c334e7e593de68855ad26c4cb",
-      "rev_count": 998534,
-      "rev_date": "2026-05-15T18:21:44Z",
-      "scrape_date": "2026-05-17T08:01:17.712905Z",
-      "stabilities": [
-        "unstable"
-      ],
-      "unfree": false,
-      "version": "11.0.100-preview.3.26207.106",
-      "outputs_to_install": [
-        "out"
-      ],
-      "outputs": {
-        "out": "/nix/store/a00jdly31a7xyyahv47zvxr8ihbf1dlm-dotnet-sdk-wrapped-11.0.100-preview.3.26207.106"
-      },
-      "system": "x86_64-darwin",
       "group": "toplevel",
       "priority": 5
     },
@@ -210,39 +189,6 @@
     {
       "attr_path": "gnumake",
       "broken": false,
-      "derivation": "/nix/store/zchqhprbkh124pd3vlfynvyyb0i5847q-gnumake-4.4.1.drv",
-      "description": "Tool to control the generation of non-source files from sources",
-      "install_id": "gnumake",
-      "license": "GPL-3.0-or-later",
-      "locked_url": "https://github.com/flox/nixpkgs?rev=d233902339c02a9c334e7e593de68855ad26c4cb",
-      "name": "gnumake-4.4.1",
-      "pname": "gnumake",
-      "rev": "d233902339c02a9c334e7e593de68855ad26c4cb",
-      "rev_count": 998534,
-      "rev_date": "2026-05-15T18:21:44Z",
-      "scrape_date": "2026-05-17T08:01:18.417279Z",
-      "stabilities": [
-        "unstable"
-      ],
-      "unfree": false,
-      "version": "4.4.1",
-      "outputs_to_install": [
-        "man",
-        "out"
-      ],
-      "outputs": {
-        "doc": "/nix/store/8cga3r53093x6yzzayqqjcd2ip2bb6gc-gnumake-4.4.1-doc",
-        "info": "/nix/store/gdg79wm2j8g86d0vilbmwa6sjvdnwysw-gnumake-4.4.1-info",
-        "man": "/nix/store/4jk8w4gsl2d2vgrpi5c8grcyx5h6k1br-gnumake-4.4.1-man",
-        "out": "/nix/store/4sgv9nplhrys2a88lfxw1swlj7kn4v54-gnumake-4.4.1"
-      },
-      "system": "x86_64-darwin",
-      "group": "toplevel",
-      "priority": 5
-    },
-    {
-      "attr_path": "gnumake",
-      "broken": false,
       "derivation": "/nix/store/kmx0hfjc7yxlmsqy2lqqqy2w9lh5fhgv-gnumake-4.4.1.drv",
       "description": "Tool to control the generation of non-source files from sources",
       "install_id": "gnumake",
@@ -333,36 +279,6 @@
         "out": "/nix/store/amh21igq2gjg6ai42f3ksan8fh89qvpm-nodejs-24.14.1"
       },
       "system": "aarch64-linux",
-      "group": "toplevel",
-      "priority": 5
-    },
-    {
-      "attr_path": "nodejs",
-      "broken": false,
-      "derivation": "/nix/store/aarkp2y0aj12skgji58mbf5va0dcf9bd-nodejs-24.14.1.drv",
-      "description": "Event-driven I/O framework for the V8 JavaScript engine",
-      "install_id": "nodejs",
-      "license": "MIT",
-      "locked_url": "https://github.com/flox/nixpkgs?rev=d233902339c02a9c334e7e593de68855ad26c4cb",
-      "name": "nodejs-24.14.1",
-      "pname": "nodejs",
-      "rev": "d233902339c02a9c334e7e593de68855ad26c4cb",
-      "rev_count": 998534,
-      "rev_date": "2026-05-15T18:21:44Z",
-      "scrape_date": "2026-05-17T08:01:42.769829Z",
-      "stabilities": [
-        "unstable"
-      ],
-      "unfree": false,
-      "version": "24.14.1",
-      "outputs_to_install": [
-        "out",
-        "out"
-      ],
-      "outputs": {
-        "out": "/nix/store/w9axwcpzxv1cd78d6v748az2j08k6vfw-nodejs-24.14.1"
-      },
-      "system": "x86_64-darwin",
       "group": "toplevel",
       "priority": 5
     },

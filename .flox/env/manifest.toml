@@ -26,14 +26,23 @@ nodejs.pkg-path = "nodejs"
 ##  ... run by _bash_ shell when you run 'flox activate'.
 ## -------------------------------------------------------------------
 [hook]
-# on-activate = '''
-#   # -> Set variables, create files and directories
-#   # -> Perform initialization steps, e.g. create a python venv
-#   # -> Useful environment variables:
-#   #      - FLOX_ENV_PROJECT=/home/user/example
-#   #      - FLOX_ENV=/home/user/example/.flox/run
-#   #      - FLOX_ENV_CACHE=/home/user/example/.flox/cache
-# '''
+on-activate = '''
+  # The Nix-built SDK lives at /nix/store/.../share/dotnet, not the
+  # OS default /usr/local/share/dotnet. The `dotnet` CLI wrapper handles
+  # that itself, but native apphost binaries produced by `dotnet build`
+  # (e.g. bin/Debug/net11.0/<name>) look up the runtime via DOTNET_ROOT
+  # and fail with "You must install .NET to run this application" if it
+  # is unset. Point it at the SDK this env provides.
+  if command -v dotnet >/dev/null 2>&1; then
+    DOTNET_ROOT="$(dirname "$(realpath "$(command -v dotnet)")")"
+    export DOTNET_ROOT
+    # Apphosts check arch-specific vars (DOTNET_ROOT_ARM64/_X64) before
+    # DOTNET_ROOT; set them too so the lookup works on both Apple Silicon
+    # and x86_64 Linux without relying on var-precedence quirks.
+    export DOTNET_ROOT_ARM64="$DOTNET_ROOT"
+    export DOTNET_ROOT_X64="$DOTNET_ROOT"
+  fi
+'''
 
 
 ## Profile script ----------------------------------------------------
@@ -88,11 +97,10 @@ nodejs.pkg-path = "nodejs"
 ## Other Environment Options -----------------------------------------
 [options]
 # Systems that environment is compatible with
-# systems = [
-#   "aarch64-darwin",
-#   "aarch64-linux",
-#   "x86_64-darwin",
-#   "x86_64-linux",
-# ]
+systems = [
+  "aarch64-darwin",
+  "aarch64-linux",
+  "x86_64-linux",
+]
 # Uncomment to disable CUDA detection.
 # cuda-detection = false
