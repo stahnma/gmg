@@ -8,7 +8,7 @@ else
 APP=$(DOCKER_HUB_USERNAME)/$(APP_STRING)
 endif
 
-.PHONY: manifest build image push-image prepare clean
+.PHONY: manifest build image push-image prepare clean test
 
 help: ## This help
 	@awk 'BEGIN {FS = ":.*?## "} /^[a-zA-Z_-]+:.*?## / {printf "\033[36m%-30s\033[0m %s\n", $$1, $$2}' $(MAKEFILE_LIST) | sort
@@ -39,6 +39,10 @@ push-image: prepare image ## Push Docker Image to Docker hub (You may need to au
 
 run: ## Helper function to run the docker image built
 	./start
+
+test: ## Run tests for gmg-client and gmg-server
+	cd src/gmg-client && npx jest
+	cd src/gmg-server && npx jest
 
 clean: ## Remove manifest file and purge node_modules
 	rm -rf manifest ./src/gmg-app/node_modules ./src/gmg-client/node_modules ./src/gmg-server/node_modules ./src/gmg-server/public/app
