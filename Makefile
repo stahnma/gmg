@@ -45,9 +45,14 @@ push-image: prepare image ## Push Docker Image to Docker hub (You may need to au
 run: ## Helper function to run the docker image built
 	./start
 
-test: ## Run tests for gmg-client and gmg-server
+test: ## Run tests for gmg-client, gmg-server, gmg-app (also builds the UI as a regression net)
 	cd src/gmg-client && npx jest
 	cd src/gmg-server && npx jest
+	cd src/gmg-app    && npm test
+	# Build the UI too — this catches Vite/toolchain regressions
+	# (e.g. an accidental reintroduction of --openssl-legacy-provider would
+	# also resurface here under modern Node).
+	cd src/gmg-app    && npm run build
 
 clean: ## Remove manifest file and purge node_modules
 	rm -rf manifest ./src/gmg-app/node_modules ./src/gmg-client/node_modules ./src/gmg-server/node_modules ./src/gmg-server/public/app
