@@ -20,7 +20,6 @@ module.exports.handle = (status) => {
                 type: alertTypes.targetFoodTempReached,
                 name: 'Target Food Temperature Reached',
                 reason: `Food temperature has reached target temperature of ${status.desiredFoodTemp}`,
-                beep: `alerts/${alertTypes.targetFoodTempReached}.mp3`,
                 level: 'info'
             }
         }

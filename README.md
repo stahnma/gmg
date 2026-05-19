@@ -7,7 +7,6 @@ Well, I like to Grill, and I often utilize the grill overnight when cooking larg
 
 ## Features
 1. Slack Alerts
-1. Configurable browser alerts sounds
 1. Auto connect/reconnect
 1. REST API and JS Client for extensions
 1. Timers
@@ -50,8 +49,6 @@ The interesting env vars:
 | `GMG_STATUS_POLLING_INTERVAL` | Poll interval (ms) | `5000` |
 | `GMG_ALERTS_SLACK_WEBHOOKURL` | Slack webhook (optional) | unset |
 | `GMG_EXTERNAL_PORT` | Host port mapped to the container (Docker only) | `80` |
-
-If you want to set your own alert sounds, override the corresponding mp3 in `src/gmg-server/public/alerts/`.
 
 ## Manual local dev (no flox)
 

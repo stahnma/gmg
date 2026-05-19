@@ -23,7 +23,6 @@ describe('lowPelletAlarmActive handler', () => {
     expect(alert.name).toBe('Grill Pellet Alarm')
     expect(alert.level).toBe('warning')
     expect(alert.reason).toContain('low on pellets')
-    expect(alert.beep).toContain('.mp3')
   })
 
   test('suppresses duplicate alerts within resend interval', () => {
