@@ -150,5 +150,8 @@ function getAlertHandlers() {
   return fs.readdirSync(handlerPath)
     .filter(file => path.basename(file) !== 'index.js')
     .filter(file => !file.endsWith('.disabled'))
+    // Jest test files live alongside the handlers and reference Jest
+    // globals (afterEach, describe...); requiring them at runtime throws.
+    .filter(file => !file.endsWith('.test.js'))
     .map(file => require(path.resolve(handlerPath, file)))
 }
