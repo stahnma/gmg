@@ -38,7 +38,20 @@ export default class GrillHistory extends Component {
                         scales: {
                             x: {
                                 type: 'realtime',
-                                time: { unit: 'minute' },
+                                time: {
+                                    unit: 'minute',
+                                    // 24h "HH:mm" instead of the adapter's
+                                    // default "h:mm a" — wider AM/PM glyphs
+                                    // crowded the axis on smaller viewports.
+                                    displayFormats: { minute: 'HH:mm' }
+                                },
+                                ticks: {
+                                    // Show ~one label every few minutes
+                                    // rather than every minute. Chart.js
+                                    // honors autoSkip by default; this is
+                                    // the explicit upper bound.
+                                    maxTicksLimit: 8
+                                },
                                 realtime: { duration: STREAM_DURATION_MS }
                             },
                             y: { type: 'linear' }
