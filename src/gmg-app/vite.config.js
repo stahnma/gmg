@@ -43,7 +43,11 @@ export default defineConfig({
     },
   },
   test: {
-    environment: 'jsdom',
+    // happy-dom instead of jsdom: jsdom still pulls in the deprecated
+    // 'whatwg-encoding' package (no replacement upstream yet), and
+    // happy-dom is enough for our single smoke test while keeping
+    // `npm install` warning-free.
+    environment: 'happy-dom',
     globals: true,
     // Pre-bundle deps so Vitest resolves CJS/ESM interop the same way the
     // dev server and build do (kept as a guardrail even after the Phase 2/3
