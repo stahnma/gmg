@@ -31,3 +31,11 @@ ChartJS.register(
   Filler,
   StreamingPlugin,
 )
+
+// Chart.js defaults assume a light page background — dark text (#666) and
+// near-black gridlines (rgba(0,0,0,0.1)) — which render as low-contrast smudges
+// on the MUI dark theme's grey[800] card. Re-pin them for dark mode so axis
+// ticks, the legend, and gridlines are actually legible. Tooltips already use
+// a dark backdrop with white text out of the box, so leave those alone.
+ChartJS.defaults.color = 'rgba(255, 255, 255, 0.87)'
+ChartJS.defaults.borderColor = 'rgba(255, 255, 255, 0.15)'
