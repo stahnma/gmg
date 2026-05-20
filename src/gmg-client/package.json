@@ -8,10 +8,11 @@
   },
   "author": "Jp Dienst",
   "license": "ISC",
-  "dependencies": {
-    "ip": "^1.1.5"
-  },
   "devDependencies": {
     "jest": "^30.4.2"
+  },
+  "overrides": {
+    "test-exclude": "^7.0.1",
+    "glob": "^13.0.6"
   }
 }
