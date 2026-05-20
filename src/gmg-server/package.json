@@ -8,7 +8,7 @@
     "test": "jest"
   },
   "dependencies": {
-    "body-parser": "~1.18.3",
+    "body-parser": "^1.20.5",
     "config": "^3.3.12",
     "cookie-parser": "~1.4.3",
     "debug": "~3.1.0",
@@ -19,14 +19,14 @@
     "node-fetch": "^2.3.0",
     "serve-favicon": "~2.5.0",
     "socket.io": "^4.8.1",
-    "sqlite": "^4.0.12",
-    "sqlite3": "^5.1.7"
+    "better-sqlite3": "^12.10.0"
   },
   "devDependencies": {
     "jest": "^30.4.2"
   },
   "overrides": {
     "test-exclude": "^7.0.1",
-    "glob": "^13.0.6"
+    "glob": "^13.0.6",
+    "ws": "^8.20.1"
   }
 }

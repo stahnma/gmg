@@ -42,15 +42,22 @@ router.put('/temperature/food/:tempF', util.routeHandler(async (req, res) => {
     res.sendStatus(200)
 }))
 
+// Prepared once at module load; better-sqlite3 statements are reusable
+// and lazily bind to the db opened in dbFactory.initialize().
+let _historyStmt
+const getHistoryStmt = () => {
+    if (!_historyStmt) {
+        _historyStmt = dbFactory.createDb().prepare(`
+            SELECT temperature_log_id, timestamp, grill_temperature, food_temperature
+            FROM temperature_log
+            WHERE timestamp >= ?;
+        `)
+    }
+    return _historyStmt
+}
+
 router.get('/temperature/history', util.routeHandler(async (req, res) => {
-    const db = await dbFactory.createDb()
-
-    const rows = await db.all(`
-        SELECT temperature_log_id, timestamp, grill_temperature, food_temperature
-        FROM temperature_log
-        WHERE timestamp >= ?;
-    `, parseInt(req.query.since, 10))
-
+    const rows = getHistoryStmt().all(parseInt(req.query.since, 10))
     res.json(rows)
 }))
 
