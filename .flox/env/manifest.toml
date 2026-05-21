@@ -1,0 +1,106 @@
+schema-version = "1.12.0"
+
+
+## Install Packages --------------------------------------------------
+##  $ flox install gum  <- puts a package in [install] section below
+##  $ flox search gum   <- search for a package
+##  $ flox show gum     <- show all versions of a package
+## -------------------------------------------------------------------
+[install]
+dotnet-sdk_11.pkg-path = "dotnet-sdk_11"
+gnumake.pkg-path = "gnumake"
+nodejs.pkg-path = "nodejs"
+# gum.pkg-path = "gum"
+# gum.version = "^0.14.5"
+
+
+## Environment Variables ---------------------------------------------
+##  ... available for use in the activated environment
+##      as well as [hook], [profile] scripts and [services] below.
+## -------------------------------------------------------------------
+[vars]
+# INTRO_MESSAGE = "It's gettin' Flox in here"
+
+
+## Activation Hook ---------------------------------------------------
+##  ... run by _bash_ shell when you run 'flox activate'.
+## -------------------------------------------------------------------
+[hook]
+on-activate = '''
+  # The Nix-built SDK lives at /nix/store/.../share/dotnet, not the
+  # OS default /usr/local/share/dotnet. The `dotnet` CLI wrapper handles
+  # that itself, but native apphost binaries produced by `dotnet build`
+  # (e.g. bin/Debug/net11.0/<name>) look up the runtime via DOTNET_ROOT
+  # and fail with "You must install .NET to run this application" if it
+  # is unset. Point it at the SDK this env provides.
+  if command -v dotnet >/dev/null 2>&1; then
+    DOTNET_ROOT="$(dirname "$(realpath "$(command -v dotnet)")")"
+    export DOTNET_ROOT
+    # Apphosts check arch-specific vars (DOTNET_ROOT_ARM64/_X64) before
+    # DOTNET_ROOT; set them too so the lookup works on both Apple Silicon
+    # and x86_64 Linux without relying on var-precedence quirks.
+    export DOTNET_ROOT_ARM64="$DOTNET_ROOT"
+    export DOTNET_ROOT_X64="$DOTNET_ROOT"
+  fi
+'''
+
+
+## Profile script ----------------------------------------------------
+## ... sourced by _your shell_ when you run 'flox activate'.
+## -------------------------------------------------------------------
+[profile]
+# common = '''
+#   gum style \
+#   --foreground 212 --border-foreground 212 --border double \
+#   --align center --width 50 --margin "1 2" --padding "2 4" \
+#     $INTRO_MESSAGE
+# '''
+## Shell-specific customizations such as setting aliases go here:
+# bash = ...
+# zsh  = ...
+# fish = ...
+
+
+## Services ---------------------------------------------------------
+##  $ flox services start             <- Starts all services
+##  $ flox services status            <- Status of running services
+##  $ flox activate --start-services  <- Activates & starts all
+## ------------------------------------------------------------------
+[services]
+# myservice.command = "python3 -m http.server"
+
+
+## Include ----------------------------------------------------------
+## ... environments to create a composed environment
+## ------------------------------------------------------------------
+[include]
+# environments = [
+#     { dir = "../common" }
+# ]
+
+
+## Build and publish your own packages ------------------------------
+##  $ flox build
+##  $ flox publish
+## ------------------------------------------------------------------
+[build]
+# [build.myproject]
+# description = "The coolest project ever"
+# version = "0.0.1"
+# command = """
+#   mkdir -p $out/bin
+#   cargo build --release
+#   cp target/release/myproject $out/bin/myproject
+# """
+
+
+## Other Environment Options -----------------------------------------
+[options]
+# Systems that environment is compatible with
+systems = [
+  "aarch64-darwin",
+  "aarch64-linux",
+  "x86_64-linux",
+]
+# Uncomment to disable CUDA detection.
+# cuda-detection = false

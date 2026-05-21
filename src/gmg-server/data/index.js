@@ -1,4 +1,4 @@
-const SQLite = require('sqlite')
+const Database = require('better-sqlite3')
 const Path = require('path')
 
 let db
@@ -8,7 +8,9 @@ module.exports.initialize = ({ logger }) => {
 
    logger('Initializing db: [%s]', db_path)
 
-   db = SQLite.open(db_path, { Promise })
+   // better-sqlite3 opens synchronously and exposes a synchronous API
+   // backed by libuv internally. No driver wiring, no Promise dance.
+   db = new Database(db_path)
 }
 
-module.exports.createDb = async () => db
+module.exports.createDb = () => db

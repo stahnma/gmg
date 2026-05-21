@@ -4,11 +4,12 @@
   "private": true,
   "scripts": {
     "start:dev": "export NODE_ENV=development && export DEBUG=src.* && export PORT=3001 && node ./bin/www",
-    "start:release": "export NODE_ENV=production && export DEBUG=src.* && export PORT=80 && node ./bin/www"
+    "start:release": "export NODE_ENV=production && export DEBUG=src.* && export PORT=80 && node ./bin/www",
+    "test": "jest"
   },
   "dependencies": {
-    "body-parser": "~1.18.3",
-    "config": "^1.31.0",
+    "body-parser": "^1.20.5",
+    "config": "^3.3.12",
     "cookie-parser": "~1.4.3",
     "debug": "~3.1.0",
     "express": "^4.16.4",
@@ -17,7 +18,15 @@
     "morgan": "^1.9.1",
     "node-fetch": "^2.3.0",
     "serve-favicon": "~2.5.0",
-    "socket.io": "^2.1.1",
-    "sqlite": "^3.0.0"
+    "socket.io": "^4.8.1",
+    "better-sqlite3": "^12.10.0"
+  },
+  "devDependencies": {
+    "jest": "^30.4.2"
+  },
+  "overrides": {
+    "test-exclude": "^7.0.1",
+    "glob": "^13.0.6",
+    "ws": "^8.20.1"
   }
 }

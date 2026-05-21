@@ -1,11 +1,13 @@
 import React, { Component } from 'react'
 import './index.css'
-import 'typeface-roboto'
-import MuiThemeProvider from 'material-ui/styles/MuiThemeProvider'
+import '@fontsource/roboto/300.css'
+import '@fontsource/roboto/400.css'
+import '@fontsource/roboto/500.css'
+import '@fontsource/roboto/700.css'
+import { ThemeProvider } from '@mui/material/styles'
+import CssBaseline from '@mui/material/CssBaseline'
 import gmgTheme from '../../theme/gmgTheme'
-import getMuiTheme from 'material-ui/styles/getMuiTheme'
 import Home from '../Home'
-// import AppBar from 'material-ui/AppBar'
 import Navigation from '../Navi'
 
 export default class App extends Component {
@@ -14,10 +16,6 @@ export default class App extends Component {
     this.state = {
       selectedNavigationIndex: 0
     }
-  }
-
-  componentDidMount() {
-
   }
 
   selectedNavigationIndexChanged = (index) => {
@@ -40,16 +38,16 @@ export default class App extends Component {
 
   render() {
     return (
-      <MuiThemeProvider muiTheme={getMuiTheme(gmgTheme)}>
+      <ThemeProvider theme={gmgTheme}>
+        <CssBaseline />
         <div className="app">
-          {/* <AppBar className="app-logo" iconStyleLeft={{ visibility: 'hidden' }} /> */}
           {this.renderCards()}
           <Navigation
             onSelectedIndexChanged={this.selectedNavigationIndexChanged}
             selectedIndex={this.selectedNavigationIndex}
           />
         </div>
-      </MuiThemeProvider>
+      </ThemeProvider>
     )
   }
 }

@@ -3,9 +3,16 @@
   "version": "1.0.0",
   "description": "Green Mountain Grills API client",
   "main": "index.js",
+  "scripts": {
+    "test": "jest"
+  },
   "author": "Jp Dienst",
   "license": "ISC",
-  "dependencies": {
-    "ip": "^1.1.5"
+  "devDependencies": {
+    "jest": "^30.4.2"
+  },
+  "overrides": {
+    "test-exclude": "^7.0.1",
+    "glob": "^13.0.6"
   }
 }

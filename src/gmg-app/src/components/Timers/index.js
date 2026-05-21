@@ -1,18 +1,29 @@
 import React, { Component } from 'react'
-import { Card, CardActions, CardMedia, CardTitle } from 'material-ui/Card'
-import Avatar from 'material-ui/Avatar'
-import FontIcon from 'material-ui/FontIcon'
-import List from 'material-ui/List/List'
-import ListItem from 'material-ui/List/ListItem'
-import Button from 'material-ui/RaisedButton'
-import logo from './logo.png'
 import PropTypes from 'prop-types'
+import Card from '@mui/material/Card'
+import CardActions from '@mui/material/CardActions'
+import CardMedia from '@mui/material/CardMedia'
+import Avatar from '@mui/material/Avatar'
+import Box from '@mui/material/Box'
+import List from '@mui/material/List'
+import ListItem from '@mui/material/ListItem'
+import ListItemAvatar from '@mui/material/ListItemAvatar'
+import ListItemText from '@mui/material/ListItemText'
+import Button from '@mui/material/Button'
+import Dialog from '@mui/material/Dialog'
+import DialogTitle from '@mui/material/DialogTitle'
+import DialogContent from '@mui/material/DialogContent'
+import DialogActions from '@mui/material/DialogActions'
+import TextField from '@mui/material/TextField'
+import Typography from '@mui/material/Typography'
+import TimerIcon from '@mui/icons-material/Timer'
+import HourglassBottomIcon from '@mui/icons-material/HourglassBottom'
+import logo from './logo.png'
 import './index.css'
-import '../../../node_modules/font-awesome/css/font-awesome.css'
-import FlatButton from 'material-ui/FlatButton'
-import Dialog from 'material-ui/Dialog'
-import TextField from 'material-ui/TextField'
-import 'typeface-roboto'
+import '@fontsource/roboto/300.css'
+import '@fontsource/roboto/400.css'
+import '@fontsource/roboto/500.css'
+import '@fontsource/roboto/700.css'
 
 const regex = /(\d{1,2}):(\d{1,2}):(\d{1,2}):(\d{1,2})/g
 const conversions = {
@@ -136,79 +147,89 @@ export default class Timers extends Component {
   }
 
   render() {
-    const actions = [
-      <FlatButton
-        label="Cancel"
-        primary={true}
-        onClick={this.handleCancel}
-      />,
-      <FlatButton
-        disabled={!!this.state.desiredCountDownError}
-        label="Set"
-        primary={true}
-        onClick={this.handleSubmit}
-      />,
-    ]
-
     return (
       <Card>
-        <CardMedia overlay={
-          <CardTitle title="Timers" subtitle="Set a grilling stopwatch or countdown timer."/>
-        }>
-          <img src={logo} alt=""/>
-        </CardMedia>
+        <Box sx={{ position: 'relative' }}>
+          <CardMedia component="img" image={logo} alt="" />
+          <Box
+            sx={{
+              position: 'absolute',
+              bottom: 0,
+              left: 0,
+              right: 0,
+              bgcolor: 'rgba(0, 0, 0, 0.55)',
+              px: 2,
+              py: 1
+            }}
+          >
+            <Typography variant="h6">Timers</Typography>
+            <Typography variant="body2">Set a grilling stopwatch or countdown timer.</Typography>
+          </Box>
+        </Box>
         <div className="controls">
           <List>
-            <ListItem
-              disabled={true}
-              leftAvatar={
-                <Avatar
-                  icon={<FontIcon className="fa fa-clock-o"/>}
-                  size={50}
-                />
-              }
-            > Timer: {this.formatSeconds(this.state.countUp)}
+            <ListItem>
+              <ListItemAvatar>
+                <Avatar sx={{ width: 50, height: 50 }}>
+                  <TimerIcon />
+                </Avatar>
+              </ListItemAvatar>
+              <ListItemText primary={`Timer: ${this.formatSeconds(this.state.countUp)}`} />
             </ListItem>
           </List>
           <CardActions>
             <Button
+              variant="contained"
               onClick={() => this.state.countUpActive ? this.cancelCountUp() : this.countUp()}
               disabled={!this.props.isEnabled}
-              label={this.state.countUpActive ? "Cancel" : "Start"}/>
+            >
+              {this.state.countUpActive ? 'Cancel' : 'Start'}
+            </Button>
           </CardActions>
           <List>
-            <ListItem
-              disabled={true}
-              leftAvatar={
-                <Avatar
-                  icon={<FontIcon className="fa fa-arrow-circle-o-down"/>}
-                  size={50}
-                />
-              }
-            > Countdown: {this.formatSeconds(this.state.countDown)}
+            <ListItem>
+              <ListItemAvatar>
+                <Avatar sx={{ width: 50, height: 50 }}>
+                  <HourglassBottomIcon />
+                </Avatar>
+              </ListItemAvatar>
+              <ListItemText primary={`Countdown: ${this.formatSeconds(this.state.countDown)}`} />
             </ListItem>
           </List>
           <CardActions>
             <Button
+              variant="contained"
               onClick={() => this.state.countDownActive ? this.cancelCountDown() : this.handleOpen()}
               disabled={!this.props.isEnabled}
-              label={this.state.countDownActive ? "Cancel" : "Start"}/>
+            >
+              {this.state.countDownActive ? 'Cancel' : 'Start'}
+            </Button>
           </CardActions>
-          <Dialog
-            title="Set the countdown time (dd:hh:mm:ss)"
-            actions={actions}
-            modal={true}
-            open={this.state.open}
-            onRequestClose={this.handleSubmit}
-          >
-            <TextField
-              id="desired-countdown"
-              value={this.state.desiredCountDown || ''}
-              onChange={this.handleDesiredCountDownChange}
-              errorText={this.state.desiredCountDownError}
-              hintText="Set countdown"
-              floatingLabelText="00:01:30:00"
-            />
+          <Dialog open={this.state.open} onClose={this.handleSubmit}>
+            <DialogTitle>Set the countdown time (dd:hh:mm:ss)</DialogTitle>
+            <DialogContent>
+              <TextField
+                margin="dense"
+                id="desired-countdown"
+                label="00:01:30:00"
+                placeholder="Set countdown"
+                value={this.state.desiredCountDown || ''}
+                onChange={this.handleDesiredCountDownChange}
+                error={!!this.state.desiredCountDownError}
+                helperText={this.state.desiredCountDownError}
+                fullWidth
+                variant="standard"
+              />
+            </DialogContent>
+            <DialogActions>
+              <Button onClick={this.handleCancel}>Cancel</Button>
+              <Button
+                disabled={!!this.state.desiredCountDownError}
+                onClick={this.handleSubmit}
+              >
+                Set
+              </Button>
+            </DialogActions>
           </Dialog>
         </div>
       </Card>

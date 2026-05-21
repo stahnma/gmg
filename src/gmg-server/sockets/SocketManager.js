@@ -1,8 +1,15 @@
-const socketIo = require('socket.io')
+const { Server } = require('socket.io')
 
 class SocketServer {
   constructor({ server, logger, pollingClient }) {
-    this._io = socketIo(server)
+    // socket.io v4 removed the callable factory in favour of a Server class.
+    // Origin is permissive because in dev the UI sits on Vite (port 3000)
+    // while the WebSocket handshake hits gmg-server (3001) — different
+    // origin. In production the UI is served from gmg-server itself, so
+    // this stays harmless.
+    this._io = new Server(server, {
+      cors: { origin: '*' }
+    })
     this._pollingClient = pollingClient
     this._sockets = []
     this._started = false
@@ -43,7 +50,8 @@ class SocketServer {
   stop() {
     if (!this._started) throw new Error('Already stopped!')
     this._started = false
-    this._sockets.forEach(socket => socket.close())
+    // v4: socket.close() became socket.disconnect(true).
+    this._sockets.forEach(socket => socket.disconnect(true))
     this._pollingClient.removeListener('status', this._onStatus)
     this._io.removeListener('connection', this._onConnection)
   }
