@@ -14,4 +14,6 @@ if [ -z "${GMG_GRILL_HOST:-}" ]; then
   exit 1
 fi
 
-exec docker run -it --rm --env-file .env -p "${GMG_EXTERNAL_PORT:-80}:80" -v gmg-data:/data gmg
+# PORT and GMG_DB_PATH are fixed inside the container (-e overrides --env-file),
+# so a .env written for ./bin/gmg works here too.
+exec docker run -it --rm --env-file .env -e PORT=80 -e GMG_DB_PATH=/data -p "${GMG_EXTERNAL_PORT:-80}:80" -v gmg-data:/data gmg

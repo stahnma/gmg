@@ -16,6 +16,20 @@ This is a Go + Svelte rewrite of [Aenima4six2/gmg](https://github.com/Aenima4six
 ## Preview
 ![preview](./assets/preview.png)
 
+## Running the binary
+
+The server is a single static binary with the web UI built in. Nothing else is needed at run time.
+
+```sh
+make build                   # bin/gmg and bin/gmg-emulator (needs Go, Node and Make: `flox activate`)
+cp .env.example .env         # set GMG_GRILL_HOST, or leave it unset to discover the grill
+./bin/gmg                    # http://localhost:3001
+```
+
+`gmg` reads `.env` from the working directory if one is there; use `--env-file /path/to/file` to read another file (it must exist). Environment variables override values in the file. History is kept in `./data` unless `GMG_DB_PATH` says otherwise.
+
+To build for another machine, for example a Raspberry Pi: `make web && GOOS=linux GOARCH=arm64 CGO_ENABLED=0 go build -o gmg ./cmd/gmg`.
+
 ## Running with Docker
 
 ```sh
@@ -43,7 +57,7 @@ This starts the app and the grill emulator. The app is at http://localhost:3000.
 
 ## Configuration
 
-All settings are environment variables.
+Settings are environment variables, or the same names in a `.env` file (see [`.env.example`](.env.example)); environment variables take precedence.
 
 | Variable | Description | Default |
 |----------|-------------|---------|

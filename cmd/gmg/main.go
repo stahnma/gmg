@@ -5,6 +5,8 @@ package main
 import (
 	"context"
 	"errors"
+	"flag"
+	"fmt"
 	"log/slog"
 	"net/http"
 	"os"
@@ -30,7 +32,29 @@ func main() {
 }
 
 func run() error {
-	cfg, err := config.Load(os.Getenv)
+	envFile := flag.String("env-file", "", "read settings from this dotenv file (default: "+config.DefaultEnvFile+" in the working directory, if present)")
+	flag.Usage = func() {
+		fmt.Fprintf(flag.CommandLine.Output(), "Usage: %s [--env-file FILE]\n\n", os.Args[0])
+		fmt.Fprintln(flag.CommandLine.Output(), "Settings come from GMG_* environment variables, which override the same")
+		fmt.Fprintln(flag.CommandLine.Output(), "names in the env file. See .env.example for the full list.")
+		fmt.Fprintln(flag.CommandLine.Output())
+		flag.PrintDefaults()
+	}
+	flag.Parse()
+	if flag.NArg() > 0 {
+		flag.Usage()
+		return fmt.Errorf("unexpected arguments: %v", flag.Args())
+	}
+
+	path, required := *envFile, true
+	if path == "" {
+		path, required = config.DefaultEnvFile, false
+	}
+	getenv, loaded, err := config.WithEnvFile(os.LookupEnv, path, required)
+	if err != nil {
+		return err
+	}
+	cfg, err := config.Load(getenv)
 	if err != nil {
 		return err
 	}
@@ -40,6 +64,9 @@ func run() error {
 	}
 	log := slog.New(slog.NewTextHandler(os.Stdout, &slog.HandlerOptions{Level: level}))
 	slog.SetDefault(log)
+	if loaded {
+		log.Info("settings loaded", "env_file", path)
+	}
 
 	db, err := store.Open(cfg.DBPath, cfg.DBMaxSizeMB)
 	if err != nil {
