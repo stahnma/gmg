@@ -1,71 +1,57 @@
+APP ?= gmg
+GOFLAGS_BUILD = -trimpath -ldflags="-s -w"
 
-date:=$(shell date +%s)
-APP_STRING=gmg
+.PHONY: help web build dev test check e2e image image-emulator up down logs clean
 
-ifndef DOCKER_HUB_USERNAME
-APP=$(APP_STRING)
-else
-APP=$(DOCKER_HUB_USERNAME)/$(APP_STRING)
-endif
-
-.PHONY: help manifest image image-nc run install build dev unit-test test test-down test-logs test-rebuild clean
-
-help: ## This help
-	@awk 'BEGIN {FS = ":.*?## "} /^[a-zA-Z_-]+:.*?## / {printf "\033[36m%-30s\033[0m %s\n", $$1, $$2}' $(MAKEFILE_LIST) | sort
+help: ## Show this help
+	@awk 'BEGIN {FS = ":.*?## "} /^[a-zA-Z0-9_-]+:.*?## / {printf "\033[36m%-16s\033[0m %s\n", $$1, $$2}' $(MAKEFILE_LIST)
 
 .DEFAULT_GOAL := help
 
-manifest: ## Generate a manifest of what's in the box
-	@echo App: $(APP) > manifest
-	@echo Unix timestamp: $(date) >> manifest
-	@echo last git commit: $(shell git log --pretty=oneline | head -1 | awk '{print $$1}') >> manifest
-	@echo active branch: $(shell git rev-parse --abbrev-ref HEAD) >> manifest
-	@echo git status: $(shell git diff --quiet || echo 'dirty') >> manifest
-	@echo git has untracked files: >> manifest
-	@git status -s >> manifest
+web/node_modules: web/package-lock.json
+	cd web && npm ci --no-audit --no-fund
+	@touch $@
 
-image: manifest ## Build Docker Image
-	cd src; docker build -t $(APP):$(date) -t $(APP):latest .
+web: web/node_modules ## Build the web UI into web/dist (embedded in the server)
+	cd web && npm run build
 
-image-nc: manifest ## Build Docker Image with no caching
-	cd src; docker build --no-cache -t $(APP):$(date) -t $(APP):latest .
+build: web ## Build bin/gmg (with the UI) and bin/gmg-emulator
+	CGO_ENABLED=0 go build $(GOFLAGS_BUILD) -o bin/gmg ./cmd/gmg
+	CGO_ENABLED=0 go build $(GOFLAGS_BUILD) -o bin/gmg-emulator ./cmd/gmg-emulator
 
-run: ## Run the Docker image (requires .env with GMG_GRILL_HOST)
-	./start
+dev: web/node_modules ## Run emulator, server (:3001) and Vite dev server (:3000) locally
+	@trap 'kill 0' EXIT INT TERM; \
+	go run ./cmd/gmg-emulator --address 127.0.0.1 --port 8080 & \
+	GMG_GRILL_HOST=127.0.0.1 GMG_DB_PATH=data GMG_LOG_LEVEL=debug go run ./cmd/gmg & \
+	cd web && npm run dev
 
-install: ## Install all npm dependencies
-	cd src/gmg-client && npm install
-	cd src/gmg-app && npm install
-	cd src/gmg-server && npm install
+test: web/node_modules ## Run Go and web unit tests
+	go test -race ./...
+	cd web && npm test
 
-build: install ## Build the UI and publish to server
-	cd src/gmg-app && npm run publish
+check: web/node_modules ## Formatting, vet and type checks
+	@test -z "$$(gofmt -l cmd internal web)" || { gofmt -l cmd internal web; echo "run gofmt -w"; exit 1; }
+	go vet ./...
+	cd web && npm run check
 
-dev: install ## Start dev servers (server on :3001, UI on :5173)
-	@echo "Starting gmg-server on port 3001..."
-	cd src/gmg-server && npm run start:dev &
-	@echo "Starting gmg-app dev server on port 5173..."
-	cd src/gmg-app && npm run dev
+e2e: ## Build the Docker images and run browser end-to-end checks
+	./e2e/run.sh
 
-unit-test: install ## Run unit tests for gmg-client, gmg-server and gmg-app
-	cd src/gmg-client && npm test
-	cd src/gmg-server && npm test
-	cd src/gmg-app && npm test
+image: ## Build the server Docker image
+	docker build -t $(APP):latest .
 
-test: ## Start app + emulator with Docker Compose for testing
+image-emulator: ## Build the emulator Docker image
+	docker build -t $(APP)-emulator:latest -f Dockerfile.emulator .
+
+up: ## Start server + emulator with Docker Compose (http://localhost:3000)
 	docker compose up --build -d
-	@echo ""
-	@echo "App running at http://localhost:3000 (with emulator)"
-	@echo "Run 'make test-logs' to tail logs or 'make test-down' to stop."
 
-test-down: ## Stop Docker Compose testing environment
+down: ## Stop Docker Compose
 	docker compose down
 
-test-logs: ## Tail logs from Docker Compose testing environment
+logs: ## Tail Docker Compose logs
 	docker compose logs -f
 
-test-rebuild: ## Rebuild and restart Docker Compose testing environment
-	docker compose up --build -d --force-recreate
-
-clean: ## Remove manifest, node_modules, and build artifacts
-	rm -rf manifest ./src/gmg-app/node_modules ./src/gmg-client/node_modules ./src/gmg-server/node_modules ./src/gmg-server/public/app
+clean: ## Remove build output (bin, node_modules, e2e output, local data, built UI)
+	rm -rf bin web/node_modules e2e/node_modules e2e/out data
+	find web/dist -mindepth 1 ! -name .gitkeep -delete

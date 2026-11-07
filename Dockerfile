@@ -21,7 +21,7 @@ RUN CGO_ENABLED=0 go build -trimpath -ldflags="-s -w" -o /out/gmg ./cmd/gmg \
     && setcap cap_net_bind_service=+ep /out/gmg \
     && mkdir -p /out/data
 
-FROM gcr.io/distroless/static-debian12:nonroot
+FROM gcr.io/distroless/static-debian13:nonroot
 COPY --from=build /out/gmg /gmg
 COPY --from=build --chown=nonroot:nonroot /out/data /data
 ENV PORT=80 \

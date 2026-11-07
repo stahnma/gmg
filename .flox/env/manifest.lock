@@ -1,0 +1,412 @@
+{
+  "lockfile-version": 1,
+  "manifest": {
+    "schema-version": "1.19.0",
+    "install": {
+      "gnumake": {
+        "pkg-path": "gnumake"
+      },
+      "go": {
+        "pkg-path": "go"
+      },
+      "nodejs_24": {
+        "pkg-path": "nodejs_24"
+      }
+    },
+    "hook": {},
+    "profile": {},
+    "options": {
+      "systems": [
+        "aarch64-darwin",
+        "aarch64-linux",
+        "x86_64-darwin",
+        "x86_64-linux"
+      ]
+    }
+  },
+  "packages": [
+    {
+      "attr_path": "gnumake",
+      "broken": false,
+      "derivation": "/nix/store/fq3j34ffr44fa5a5nkwci5pdncl5h7hg-gnumake-4.4.1.drv",
+      "description": "Tool to control the generation of non-source files from sources",
+      "install_id": "gnumake",
+      "license": "GPL-3.0-or-later",
+      "locked_url": "https://github.com/flox/nixpkgs?rev=d407951447dcd00442e97087bf374aad70c04cea",
+      "name": "gnumake-4.4.1",
+      "pname": "gnumake",
+      "rev": "d407951447dcd00442e97087bf374aad70c04cea",
+      "rev_count": 1027867,
+      "rev_date": "2026-07-05T04:06:12Z",
+      "scrape_date": "2026-07-06T03:12:56.218409Z",
+      "stabilities": [
+        "staging",
+        "unstable"
+      ],
+      "unfree": false,
+      "version": "4.4.1",
+      "outputs_to_install": [
+        "man",
+        "out"
+      ],
+      "outputs": {
+        "doc": "/nix/store/v2jpgmm2fsg7b0z27cc514jdqbhm0isy-gnumake-4.4.1-doc",
+        "info": "/nix/store/dli72plfj1gcp88wv6px7qjjqvnnlql5-gnumake-4.4.1-info",
+        "man": "/nix/store/mzy3b5lxi8jbq5d63yvq52sjsq73907l-gnumake-4.4.1-man",
+        "out": "/nix/store/ij3d5cfr8h31a41l80jzid0z6kj2ajsv-gnumake-4.4.1"
+      },
+      "system": "aarch64-darwin",
+      "group": "toplevel",
+      "priority": 5
+    },
+    {
+      "attr_path": "gnumake",
+      "broken": false,
+      "derivation": "/nix/store/8g055kd88xxnsxxanrn2l1ycmd1zaqp4-gnumake-4.4.1.drv",
+      "description": "Tool to control the generation of non-source files from sources",
+      "install_id": "gnumake",
+      "license": "GPL-3.0-or-later",
+      "locked_url": "https://github.com/flox/nixpkgs?rev=d407951447dcd00442e97087bf374aad70c04cea",
+      "name": "gnumake-4.4.1",
+      "pname": "gnumake",
+      "rev": "d407951447dcd00442e97087bf374aad70c04cea",
+      "rev_count": 1027867,
+      "rev_date": "2026-07-05T04:06:12Z",
+      "scrape_date": "2026-07-06T03:41:23.879706Z",
+      "stabilities": [
+        "staging",
+        "unstable"
+      ],
+      "unfree": false,
+      "version": "4.4.1",
+      "outputs_to_install": [
+        "man",
+        "out"
+      ],
+      "outputs": {
+        "debug": "/nix/store/rcg8zj3391869cn266zwxynplwhyf6qw-gnumake-4.4.1-debug",
+        "doc": "/nix/store/qvl65zgm24p9sw0mzw3cxijcs8palykk-gnumake-4.4.1-doc",
+        "info": "/nix/store/2xp5f2ypvrlg6wn5s44jg3ji82l78k9q-gnumake-4.4.1-info",
+        "man": "/nix/store/3c96gbpypik8gzasv9brnka3i6mks9rz-gnumake-4.4.1-man",
+        "out": "/nix/store/v1888rzl1qf8zzd27q1vxvqqssizjx3x-gnumake-4.4.1"
+      },
+      "system": "aarch64-linux",
+      "group": "toplevel",
+      "priority": 5
+    },
+    {
+      "attr_path": "gnumake",
+      "broken": false,
+      "derivation": "/nix/store/k8zf9n1v4hwky8xq8k83rxh7lrxwy630-gnumake-4.4.1.drv",
+      "description": "Tool to control the generation of non-source files from sources",
+      "install_id": "gnumake",
+      "license": "GPL-3.0-or-later",
+      "locked_url": "https://github.com/flox/nixpkgs?rev=d407951447dcd00442e97087bf374aad70c04cea",
+      "name": "gnumake-4.4.1",
+      "pname": "gnumake",
+      "rev": "d407951447dcd00442e97087bf374aad70c04cea",
+      "rev_count": 1027867,
+      "rev_date": "2026-07-05T04:06:12Z",
+      "scrape_date": "2026-07-06T04:09:01.829543Z",
+      "stabilities": [
+        "staging",
+        "unstable"
+      ],
+      "unfree": false,
+      "version": "4.4.1",
+      "outputs_to_install": [
+        "man",
+        "out"
+      ],
+      "outputs": {
+        "doc": "/nix/store/3b9cjf16jx4ncpp3b4k6m8q01nxsrw1n-gnumake-4.4.1-doc",
+        "info": "/nix/store/rriz5p4q8a6sca7sw3p3js1m5dl09ia8-gnumake-4.4.1-info",
+        "man": "/nix/store/wb4yn3d7vmi1hr4f8pz38rjvcl7f70ma-gnumake-4.4.1-man",
+        "out": "/nix/store/0bg5b97b9hbhz8907bfcrch1i116xppa-gnumake-4.4.1"
+      },
+      "system": "x86_64-darwin",
+      "group": "toplevel",
+      "priority": 5
+    },
+    {
+      "attr_path": "gnumake",
+      "broken": false,
+      "derivation": "/nix/store/ppc7b3wjgk81bxnls18vjflgw70wxss4-gnumake-4.4.1.drv",
+      "description": "Tool to control the generation of non-source files from sources",
+      "install_id": "gnumake",
+      "license": "GPL-3.0-or-later",
+      "locked_url": "https://github.com/flox/nixpkgs?rev=d407951447dcd00442e97087bf374aad70c04cea",
+      "name": "gnumake-4.4.1",
+      "pname": "gnumake",
+      "rev": "d407951447dcd00442e97087bf374aad70c04cea",
+      "rev_count": 1027867,
+      "rev_date": "2026-07-05T04:06:12Z",
+      "scrape_date": "2026-07-06T04:40:26.701509Z",
+      "stabilities": [
+        "staging",
+        "unstable"
+      ],
+      "unfree": false,
+      "version": "4.4.1",
+      "outputs_to_install": [
+        "man",
+        "out"
+      ],
+      "outputs": {
+        "debug": "/nix/store/054b9sxxzph2fbwmj45njf1rspjifaz6-gnumake-4.4.1-debug",
+        "doc": "/nix/store/c2skg22md4ablx0qfcrsh7vpad31zgyx-gnumake-4.4.1-doc",
+        "info": "/nix/store/6mifiq9cp2bsg9ghkhifrvlmip7z3147-gnumake-4.4.1-info",
+        "man": "/nix/store/arjpl2nnq7khwfhy16qphyxxg924apy1-gnumake-4.4.1-man",
+        "out": "/nix/store/k9ybsvscqk4lhz5ndc1ap9800im1cry1-gnumake-4.4.1"
+      },
+      "system": "x86_64-linux",
+      "group": "toplevel",
+      "priority": 5
+    },
+    {
+      "attr_path": "go",
+      "broken": false,
+      "derivation": "/nix/store/0j94l4ngkz3fppqd0wxqsvjwri4fny1y-go-1.26.4.drv",
+      "description": "Go Programming language",
+      "install_id": "go",
+      "license": "BSD-3-Clause",
+      "locked_url": "https://github.com/flox/nixpkgs?rev=d407951447dcd00442e97087bf374aad70c04cea",
+      "name": "go-1.26.4",
+      "pname": "go",
+      "rev": "d407951447dcd00442e97087bf374aad70c04cea",
+      "rev_count": 1027867,
+      "rev_date": "2026-07-05T04:06:12Z",
+      "scrape_date": "2026-07-06T03:12:56.227877Z",
+      "stabilities": [
+        "staging",
+        "unstable"
+      ],
+      "unfree": false,
+      "version": "1.26.4",
+      "outputs_to_install": [
+        "out",
+        "out",
+        "out",
+        "out"
+      ],
+      "outputs": {
+        "out": "/nix/store/kyai650rrywrzflnwda9mbk2c2j9w68r-go-1.26.4"
+      },
+      "system": "aarch64-darwin",
+      "group": "toplevel",
+      "priority": 5
+    },
+    {
+      "attr_path": "go",
+      "broken": false,
+      "derivation": "/nix/store/a402qx3ryvfilga56w29z0izz6jgi7gi-go-1.26.4.drv",
+      "description": "Go Programming language",
+      "install_id": "go",
+      "license": "BSD-3-Clause",
+      "locked_url": "https://github.com/flox/nixpkgs?rev=d407951447dcd00442e97087bf374aad70c04cea",
+      "name": "go-1.26.4",
+      "pname": "go",
+      "rev": "d407951447dcd00442e97087bf374aad70c04cea",
+      "rev_count": 1027867,
+      "rev_date": "2026-07-05T04:06:12Z",
+      "scrape_date": "2026-07-06T03:41:23.896640Z",
+      "stabilities": [
+        "staging",
+        "unstable"
+      ],
+      "unfree": false,
+      "version": "1.26.4",
+      "outputs_to_install": [
+        "out",
+        "out"
+      ],
+      "outputs": {
+        "out": "/nix/store/lgcj27hrbanbc93xm9zdrldds7b1jrw8-go-1.26.4"
+      },
+      "system": "aarch64-linux",
+      "group": "toplevel",
+      "priority": 5
+    },
+    {
+      "attr_path": "go",
+      "broken": false,
+      "derivation": "/nix/store/0lvbzgq250sass3jyxxvpamk09gcnym3-go-1.26.4.drv",
+      "description": "Go Programming language",
+      "install_id": "go",
+      "license": "BSD-3-Clause",
+      "locked_url": "https://github.com/flox/nixpkgs?rev=d407951447dcd00442e97087bf374aad70c04cea",
+      "name": "go-1.26.4",
+      "pname": "go",
+      "rev": "d407951447dcd00442e97087bf374aad70c04cea",
+      "rev_count": 1027867,
+      "rev_date": "2026-07-05T04:06:12Z",
+      "scrape_date": "2026-07-06T04:09:01.839364Z",
+      "stabilities": [
+        "staging",
+        "unstable"
+      ],
+      "unfree": false,
+      "version": "1.26.4",
+      "outputs_to_install": [
+        "out"
+      ],
+      "outputs": {
+        "out": "/nix/store/h0z6ghmi3cihlbm163d72xs9p9nn04a1-go-1.26.4"
+      },
+      "system": "x86_64-darwin",
+      "group": "toplevel",
+      "priority": 5
+    },
+    {
+      "attr_path": "go",
+      "broken": false,
+      "derivation": "/nix/store/z0b6qhv17xys7hfpnxmk0vm31nc3pxdf-go-1.26.4.drv",
+      "description": "Go Programming language",
+      "install_id": "go",
+      "license": "BSD-3-Clause",
+      "locked_url": "https://github.com/flox/nixpkgs?rev=d407951447dcd00442e97087bf374aad70c04cea",
+      "name": "go-1.26.4",
+      "pname": "go",
+      "rev": "d407951447dcd00442e97087bf374aad70c04cea",
+      "rev_count": 1027867,
+      "rev_date": "2026-07-05T04:06:12Z",
+      "scrape_date": "2026-07-06T04:40:26.718134Z",
+      "stabilities": [
+        "staging",
+        "unstable"
+      ],
+      "unfree": false,
+      "version": "1.26.4",
+      "outputs_to_install": [
+        "out",
+        "out"
+      ],
+      "outputs": {
+        "out": "/nix/store/gb0njhqswlc5n127ikgyikvq39r40l6f-go-1.26.4"
+      },
+      "system": "x86_64-linux",
+      "group": "toplevel",
+      "priority": 5
+    },
+    {
+      "attr_path": "nodejs_24",
+      "broken": false,
+      "derivation": "/nix/store/1a0cn85p1mwixhwy16db7v2652pz7l8g-nodejs-24.16.0.drv",
+      "description": "Event-driven I/O framework for the V8 JavaScript engine",
+      "install_id": "nodejs_24",
+      "license": "MIT",
+      "locked_url": "https://github.com/flox/nixpkgs?rev=d407951447dcd00442e97087bf374aad70c04cea",
+      "name": "nodejs-24.16.0",
+      "pname": "nodejs_24",
+      "rev": "d407951447dcd00442e97087bf374aad70c04cea",
+      "rev_count": 1027867,
+      "rev_date": "2026-07-05T04:06:12Z",
+      "scrape_date": "2026-07-06T03:13:20.510831Z",
+      "stabilities": [
+        "staging",
+        "unstable"
+      ],
+      "unfree": false,
+      "version": "24.16.0",
+      "outputs_to_install": [
+        "out"
+      ],
+      "outputs": {
+        "out": "/nix/store/1zm1xb652wk1kscxbcvbryq8y45b0gy5-nodejs-24.16.0"
+      },
+      "system": "aarch64-darwin",
+      "group": "toplevel",
+      "priority": 5
+    },
+    {
+      "attr_path": "nodejs_24",
+      "broken": false,
+      "derivation": "/nix/store/aay2n9r5ljwfvlva807p9f0p1vpwg7mb-nodejs-24.16.0.drv",
+      "description": "Event-driven I/O framework for the V8 JavaScript engine",
+      "install_id": "nodejs_24",
+      "license": "MIT",
+      "locked_url": "https://github.com/flox/nixpkgs?rev=d407951447dcd00442e97087bf374aad70c04cea",
+      "name": "nodejs-24.16.0",
+      "pname": "nodejs_24",
+      "rev": "d407951447dcd00442e97087bf374aad70c04cea",
+      "rev_count": 1027867,
+      "rev_date": "2026-07-05T04:06:12Z",
+      "scrape_date": "2026-07-06T03:42:00.480294Z",
+      "stabilities": [
+        "staging",
+        "unstable"
+      ],
+      "unfree": false,
+      "version": "24.16.0",
+      "outputs_to_install": [
+        "out"
+      ],
+      "outputs": {
+        "out": "/nix/store/60vys190zxlx4k1jz0kyvk4vydzr7qml-nodejs-24.16.0"
+      },
+      "system": "aarch64-linux",
+      "group": "toplevel",
+      "priority": 5
+    },
+    {
+      "attr_path": "nodejs_24",
+      "broken": false,
+      "derivation": "/nix/store/yc1bpd21mkkawwxkq2zskmkqjmzwgv54-nodejs-24.16.0.drv",
+      "description": "Event-driven I/O framework for the V8 JavaScript engine",
+      "install_id": "nodejs_24",
+      "license": "MIT",
+      "locked_url": "https://github.com/flox/nixpkgs?rev=d407951447dcd00442e97087bf374aad70c04cea",
+      "name": "nodejs-24.16.0",
+      "pname": "nodejs_24",
+      "rev": "d407951447dcd00442e97087bf374aad70c04cea",
+      "rev_count": 1027867,
+      "rev_date": "2026-07-05T04:06:12Z",
+      "scrape_date": "2026-07-06T04:09:32.263259Z",
+      "stabilities": [
+        "staging",
+        "unstable"
+      ],
+      "unfree": false,
+      "version": "24.16.0",
+      "outputs_to_install": [
+        "out"
+      ],
+      "outputs": {
+        "out": "/nix/store/v04l0kjhdvbzkzrnw6ryf43dp8v0qapv-nodejs-24.16.0"
+      },
+      "system": "x86_64-darwin",
+      "group": "toplevel",
+      "priority": 5
+    },
+    {
+      "attr_path": "nodejs_24",
+      "broken": false,
+      "derivation": "/nix/store/k9jn43g1p70zs7l9vgxh57aarg2s2jkv-nodejs-24.16.0.drv",
+      "description": "Event-driven I/O framework for the V8 JavaScript engine",
+      "install_id": "nodejs_24",
+      "license": "MIT",
+      "locked_url": "https://github.com/flox/nixpkgs?rev=d407951447dcd00442e97087bf374aad70c04cea",
+      "name": "nodejs-24.16.0",
+      "pname": "nodejs_24",
+      "rev": "d407951447dcd00442e97087bf374aad70c04cea",
+      "rev_count": 1027867,
+      "rev_date": "2026-07-05T04:06:12Z",
+      "scrape_date": "2026-07-06T04:41:05.932913Z",
+      "stabilities": [
+        "staging",
+        "unstable"
+      ],
+      "unfree": false,
+      "version": "24.16.0",
+      "outputs_to_install": [
+        "out"
+      ],
+      "outputs": {
+        "out": "/nix/store/zvj0hl7rhh0ccr5vkcg3ijs3xm3sgyac-nodejs-24.16.0"
+      },
+      "system": "x86_64-linux",
+      "group": "toplevel",
+      "priority": 5
+    }
+  ]
+}

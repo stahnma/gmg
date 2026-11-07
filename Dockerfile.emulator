@@ -5,7 +5,7 @@ COPY cmd ./cmd
 COPY internal ./internal
 RUN CGO_ENABLED=0 go build -trimpath -ldflags="-s -w" -o /out/gmg-emulator ./cmd/gmg-emulator
 
-FROM gcr.io/distroless/static-debian12:nonroot
+FROM gcr.io/distroless/static-debian13:nonroot
 COPY --from=build /out/gmg-emulator /gmg-emulator
 EXPOSE 8080/udp
 ENTRYPOINT ["/gmg-emulator"]
