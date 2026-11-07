@@ -5,3 +5,10 @@
 /src/gmg-server/public/app
 /src/gmg-app/dist
 **/.claude
+
+# Go port
+/web/dist/*
+!/web/dist/.gitkeep
+/web/node_modules
+/gmg
+/gmg-emulator

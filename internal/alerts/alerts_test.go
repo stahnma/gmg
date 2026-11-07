@@ -1,0 +1,185 @@
+package alerts
+
+import (
+	"context"
+	"encoding/json"
+	"errors"
+	"io"
+	"net/http"
+	"net/http/httptest"
+	"strings"
+	"sync"
+	"testing"
+
+	"github.com/stahnma/gmg/internal/protocol"
+)
+
+func grill(cur, want int) protocol.Status {
+	return protocol.Status{IsOn: true, CurrentGrillTemp: cur, DesiredGrillTemp: want}
+}
+
+func food(cur, want int) protocol.Status {
+	return protocol.Status{IsOn: true, CurrentFoodTemp: cur, DesiredFoodTemp: want}
+}
+
+// fires runs statuses through h and reports which ones produced an alert.
+func fires(h Handler, statuses ...protocol.Status) []bool {
+	var out []bool
+	for _, s := range statuses {
+		out = append(out, h.Check(s) != nil)
+	}
+	return out
+}
+
+func eq(a, b []bool) bool {
+	if len(a) != len(b) {
+		return false
+	}
+	for i := range a {
+		if a[i] != b[i] {
+			return false
+		}
+	}
+	return true
+}
+
+func TestTargetGrillTemp(t *testing.T) {
+	tests := []struct {
+		name     string
+		statuses []protocol.Status
+		want     []bool
+	}{
+		{"fires once at target", []protocol.Status{grill(200, 225), grill(225, 225), grill(230, 225)}, []bool{false, true, false}},
+		{"not when off", []protocol.Status{{IsOn: false, CurrentGrillTemp: 300, DesiredGrillTemp: 225}}, []bool{false}},
+		{"not without a target", []protocol.Status{grill(300, 0)}, []bool{false}},
+		{"re-arms on new target", []protocol.Status{grill(225, 225), grill(250, 250), grill(250, 225)}, []bool{true, true, true}},
+		{"dip below target does not re-fire", []protocol.Status{grill(225, 225), grill(220, 225), grill(226, 225)}, []bool{true, false, false}},
+		// Fix: the Node version never alerted again for the same target, even after a power cycle.
+		{"re-arms after power off", []protocol.Status{grill(225, 225), {IsOn: false}, grill(225, 225)}, []bool{true, false, true}},
+	}
+	for _, tt := range tests {
+		if got := fires(&TargetGrillTemp{}, tt.statuses...); !eq(got, tt.want) {
+			t.Errorf("%s: got %v, want %v", tt.name, got, tt.want)
+		}
+	}
+	a := (&TargetGrillTemp{}).Check(grill(225, 225))
+	want := Alert{Type: "targetGrillTempReached", Name: "Target Grill Temperature Reached",
+		Reason: "Grill temperature has reached target temperature of 225", Beep: "alerts/targetGrillTempReached.mp3", Level: "info"}
+	if *a != want {
+		t.Errorf("alert %+v", *a)
+	}
+}
+
+func TestTargetFoodTemp(t *testing.T) {
+	got := fires(&TargetFoodTemp{}, food(150, 165), food(165, 165), food(170, 165), food(170, 170), protocol.Status{}, food(170, 170))
+	if want := []bool{false, true, false, true, false, true}; !eq(got, want) {
+		t.Errorf("got %v, want %v", got, want)
+	}
+	if fires(&TargetFoodTemp{}, food(0, 165))[0] { // no probe connected
+		t.Error("must not fire without a probe reading")
+	}
+	a := (&TargetFoodTemp{}).Check(food(165, 165))
+	if a.Reason != "Food temperature has reached target temperature of 165" || a.Beep != "alerts/targetFoodTempReached.mp3" {
+		t.Errorf("alert %+v", *a)
+	}
+}
+
+func TestLowPellet(t *testing.T) {
+	low := protocol.Status{IsOn: true, LowPelletAlarmActive: true}
+	ok := protocol.Status{IsOn: true}
+	// Fix: the Node version alerted only once per server run.
+	got := fires(&LowPellet{}, ok, low, low, ok, low)
+	if want := []bool{false, true, false, false, true}; !eq(got, want) {
+		t.Errorf("got %v, want %v", got, want)
+	}
+	if a := (&LowPellet{}).Check(low); a.Level != "warning" || a.Name != "Grill Pellet Alarm" {
+		t.Errorf("alert %+v", *a)
+	}
+}
+
+type recordSender struct {
+	mu   sync.Mutex
+	got  []Alert
+	fail bool
+}
+
+func (r *recordSender) Name() string { return "record" }
+func (r *recordSender) Send(_ context.Context, a Alert) error {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	r.got = append(r.got, a)
+	if r.fail {
+		return errors.New("boom")
+	}
+	return nil
+}
+
+func TestManagerDeliversToAllSenders(t *testing.T) {
+	a, b := &recordSender{}, &recordSender{fail: true}
+	m := NewManager(DefaultHandlers(), []Sender{a, b}, nil)
+	s := protocol.Status{IsOn: true, LowPelletAlarmActive: true, CurrentGrillTemp: 225, DesiredGrillTemp: 225}
+	if fired := m.OnStatus(s); len(fired) != 2 {
+		t.Fatalf("want low pellet + grill target, got %+v", fired)
+	}
+	m.Wait()
+	if len(a.got) != 2 || len(b.got) != 2 {
+		t.Fatalf("each sender should get both alerts (a failing sender doesn't affect others): %d, %d", len(a.got), len(b.got))
+	}
+	if len(m.OnStatus(s)) != 0 {
+		t.Fatal("same status again should not re-fire")
+	}
+}
+
+func TestBrowserSenderAudio(t *testing.T) {
+	a := Alert{Type: "x", Beep: "alerts/x.mp3"}
+	for _, audio := range []bool{true, false} {
+		var got Alert
+		BrowserSender{AudioEnabled: audio, Publish: func(ev string, p any) {
+			if ev != "alert" {
+				t.Errorf("event %q", ev)
+			}
+			got = p.(Alert)
+		}}.Send(context.Background(), a)
+		if (got.Beep != "") != audio {
+			t.Errorf("audio=%v: beep %q", audio, got.Beep)
+		}
+	}
+	b, _ := json.Marshal(Alert{Type: "x"})
+	if strings.Contains(string(b), "beep") {
+		t.Errorf("empty beep must be omitted from JSON: %s", b)
+	}
+}
+
+func TestSlackSender(t *testing.T) {
+	var body map[string]any
+	var ctype string
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		ctype = r.Header.Get("Content-Type")
+		b, _ := io.ReadAll(r.Body)
+		json.Unmarshal(b, &body)
+	}))
+	defer srv.Close()
+
+	s := SlackSender{WebhookURL: srv.URL, Channel: "#alerts", Username: "grill-bot"}
+	if err := s.Send(context.Background(), Alert{Name: "Low <pellets>", Reason: "A & B"}); err != nil {
+		t.Fatal(err)
+	}
+	if ctype != "application/json" {
+		t.Errorf("content type %q", ctype)
+	}
+	if body["text"] != "*Low &lt;pellets&gt;*\nA &amp; B" || body["channel"] != "#alerts" ||
+		body["username"] != "grill-bot" || body["icon_emoji"] != ":meat_on_bone:" || body["link_names"] != float64(1) {
+		t.Errorf("payload %+v", body)
+	}
+}
+
+func TestSlackSenderErrorStatus(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		http.Error(w, "invalid_token", http.StatusForbidden)
+	}))
+	defer srv.Close()
+	err := SlackSender{WebhookURL: srv.URL}.Send(context.Background(), Alert{})
+	if err == nil || !strings.Contains(err.Error(), "403") || !strings.Contains(err.Error(), "invalid_token") {
+		t.Fatalf("got %v", err)
+	}
+}
