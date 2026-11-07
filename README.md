@@ -1,90 +1,115 @@
 # Green Mountain Grills App
 
-A web-based dashboard for monitoring and controlling Green Mountain Grills. Provides reliable alerting for critical grill events like low pellets or target temperatures being reached.
+A web dashboard for monitoring and controlling Green Mountain Grills over their WiFi (UDP) protocol, with reliable alerts for events like low pellets or a target temperature being reached.
+
+This is a Go + Svelte rewrite of [Aenima4six2/gmg](https://github.com/Aenima4six2/gmg). It keeps the same HTTP API, configuration variables and history database, so it's a drop-in replacement. The last JavaScript/C# version is on the `integration` branch.
 
 ## Features
-- Slack and webhook alerts for grill events
-- Configurable browser alert sounds
-- Auto connect/reconnect to grill
-- Real-time temperature history chart
-- Grill controls (power, food temp, grill temp)
-- Timers (stopwatch and countdown)
-- REST API and JS client for extensions
+- Grill controls: power, grill and food target temperatures
+- Live status and a temperature history chart
+- Alerts in the browser (with optional sounds) and to Slack
+- Timers: stopwatch and countdown
+- Auto-discovery of the grill on the local network
+- Grill emulator for development and testing without a grill
+- REST API and a live event stream for extensions
 
 ## Preview
 ![preview](./assets/preview.png)
 
 ## Running with Docker
 
-Server cannot auto-discover the grill in Docker, so you must provide its IP:
-
 ```sh
-cd src
 docker build -t gmg .
-docker run -it -p 80:80 -e "GMG_GRILL_HOST=xx.xx.xx.xx" gmg
+docker run -d -p 80:80 -v gmg-data:/data -e GMG_GRILL_HOST=192.168.1.100 gmg
 ```
 
-You can omit `GMG_ALERTS_SLACK_WEBHOOKURL` if you're not using Slack.
+The image is a single static binary on distroless (about 17 MB) and runs as a non-root user. History is kept in the `/data` volume.
 
-## Testing with Docker Compose
-
-Docker Compose runs the app alongside the grill emulator for local testing:
+To let the server **discover the grill automatically**, leave `GMG_GRILL_HOST` unset and use host networking so the broadcast reaches your LAN:
 
 ```sh
-docker compose up --build
+docker run -d --network host -v gmg-data:/data gmg
 ```
 
-The app will be available at `http://localhost:3000`.
+Alternatively, copy `.env.example` to `.env`, set `GMG_GRILL_HOST`, and run `./start`.
+
+### Trying it with the emulator
+
+```sh
+docker compose up --build    # or: make up
+```
+
+This starts the app and the grill emulator. The app is at http://localhost:3000.
 
 ## Configuration
 
-The server is configured via environment variables or config files in `src/gmg-server/config/`.
+All settings are environment variables.
 
 | Variable | Description | Default |
 |----------|-------------|---------|
-| `GMG_GRILL_HOST` | IP address of the grill | `255.255.255.255` (broadcast/auto-discover) |
+| `GMG_GRILL_HOST` | Grill IP address. A broadcast address (containing `255`) means discover the grill on the network | `255.255.255.255` |
 | `GMG_GRILL_PORT` | Grill UDP port | `8080` |
+| `GMG_GRILL_TRIES` | Resends per command before giving up | `5` |
+| `GMG_GRILL_RETRYMS` | Wait for a reply before resending (ms) | `2000` |
 | `GMG_STATUS_POLLING_INTERVAL` | Status poll interval (ms) | `5000` |
-| `GMG_ALERTS_SLACK_WEBHOOKURL` | Slack webhook URL for alerts | none |
+| `GMG_DB_PATH` | Directory for the history database (`grill_data.db`) | `data` (`/data` in Docker) |
+| `GMG_DB_MAX_SIZE_MB` | Database size limit; the oldest 10% of rows are pruned when exceeded | `50` |
 | `GMG_ALERTS_AUDIO_ENABLED` | Play a sound in the browser when an alert fires (`true`/`false`) | `true` |
-| `GMG_DB_PATH` | Directory for SQLite database file | `src/gmg-server/data/` |
-| `GMG_DB_MAX_SIZE_MB` | Max database size before oldest rows are pruned | `50` |
+| `GMG_ALERTS_SLACK_WEBHOOKURL` | Slack incoming-webhook URL; Slack alerts are off when unset | none |
+| `GMG_ALERTS_SLACK_CHANNEL` | Slack channel | `#alerts` |
+| `GMG_ALERTS_SLACK_USERNAME` | Slack username | `grill-bot` |
+| `GMG_LOG_LEVEL` | `debug`, `info`, `warn` or `error` | `info` |
+| `PORT` | HTTP port | `3001` (`80` in Docker) |
 
-See `.env.example` for a template. To customize alert sounds, replace the mp3 files in `src/gmg-server/public/alerts/`; set `GMG_ALERTS_AUDIO_ENABLED=false` to turn them off.
+To change the alert sounds, replace the mp3 files in `web/public/alerts/` and rebuild.
 
-## Development Setup
+## Alerts
 
-**Prerequisites:** Node 24+, .NET 10+ SDK (for the emulator)
+| Alert | When it fires |
+|-------|---------------|
+| Target Grill Temperature Reached | The grill reaches its target. Fires again for a new target, or after the grill has been turned off |
+| Target Food Temperature Reached | The food probe reaches its target. Same re-arming as above |
+| Grill Pellet Alarm | The grill reports low pellets. Fires again each time the alarm clears and comes back |
 
-1. Clone the repo
-2. Start the emulator: `cd src/gmg-emulator && dotnet run`
-3. Start the server: `cd src/gmg-server && npm install && npm run start:dev`
-4. Start the UI: `cd src/gmg-app && npm install && npm run dev`
+## API
 
-The dev server (Vite) runs on `http://localhost:5173` and proxies API requests to the server on port 3001.
+| Method | Path | |
+|--------|------|-|
+| `GET` | `/api/status` | Current grill status (JSON) |
+| `PUT` | `/api/powertoggle`, `/api/poweron`, `/api/poweroff` | Power |
+| `PUT` | `/api/temperature/grill/{°F}`, `/api/temperature/food/{°F}` | Set target temperatures |
+| `GET` | `/api/temperature/history?since={unix seconds}` | Temperature history (JSON) |
+| `GET` | `/api/events` | Live [Server-Sent Events](https://developer.mozilla.org/en-US/docs/Web/API/Server-sent_events): `status` on every poll, `alert` when one fires |
 
-VSCode users can open `gmg.code-workspace` and use the pre-configured debug launch configs.
+Commands return `OK`. They return `400` with a message when the grill can't accept the command (for example, setting a temperature while it's off), and `500` with a message when the grill doesn't respond.
 
-## Makefile
+## Development
 
-A `Makefile` is included for common tasks. Run `make help` to see all targets:
+**Prerequisites:** Go 1.26+, Node 24+, GNU Make, Docker (for images and end-to-end tests). With [flox](https://flox.dev), `flox activate` provides Go, Node and Make.
 
 ```sh
-make unit-test     # run unit tests for gmg-client, gmg-server and gmg-app
-make test          # start app + emulator via Docker Compose
-make test-down     # stop testing environment
-make test-logs     # tail Docker Compose logs
-make test-rebuild  # rebuild and restart testing environment
-make image         # build Docker images (app + emulator)
-make image-nc      # build with no cache
-make build-emulator # build the grill emulator (.NET)
-make install       # install all npm dependencies
-make build         # build UI and publish to server
-make dev           # start dev servers (server + Vite)
-make clean         # remove node_modules and build artifacts
+make dev     # emulator + server (:3001) + Vite dev server with hot reload at http://localhost:3000
+make test    # Go tests (with the race detector) and web UI tests
+make check   # gofmt, go vet, svelte-check
+make e2e     # build the Docker images and run browser end-to-end tests against them
+make build   # bin/gmg (UI embedded) and bin/gmg-emulator
+make help    # everything else
 ```
 
-## Tech Stack
-- **Frontend:** React 18, MUI 6, Vite, Chart.js 3, Socket.IO
-- **Backend:** Express, Socket.IO, SQLite
-- **Emulator:** .NET 10 (C#)
+### Layout
+
+| Path | |
+|------|-|
+| `cmd/gmg` | Server: polls the grill, records history, sends alerts, serves the API and UI |
+| `cmd/gmg-emulator` | Grill emulator (UDP) |
+| `internal/protocol` | GMG wire protocol: commands and the 36-byte status format (shared by client and emulator) |
+| `internal/grill` | UDP client: discovery, retries, command validation |
+| `internal/poller`, `alerts`, `store`, `api`, `config` | Server components |
+| `web/` | Svelte + TypeScript UI, built with Vite and embedded into the server binary |
+| `e2e/` | Playwright checks against the Docker images |
+| `doc/decode.txt` | Notes and captures from decoding the grill's status format |
+
+## Tech stack
+- **Server and emulator:** Go (standard library + pure-Go SQLite, no CGO)
+- **UI:** Svelte 5, TypeScript, Vite, Chart.js
+- **Tests:** Go testing, Vitest + Testing Library, Playwright

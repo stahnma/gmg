@@ -1,16 +1,13 @@
-/**/node_modules
+**/node_modules
 /.idea
-/manifest
 /.env
-/src/gmg-server/public/app
-/src/gmg-app/dist
 **/.claude
 
-# Go port
+# build output
+/bin
 /web/dist/*
 !/web/dist/.gitkeep
-/web/node_modules
-/gmg
-/gmg-emulator
-/bin
+/e2e/out
+
+# local history database (make dev)
 /data

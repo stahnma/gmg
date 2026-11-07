@@ -1,5 +1,7 @@
 **/node_modules
-**/bin
-**/obj
-**/.git
+.git
+.flox
+bin
+data
 web/dist
+e2e

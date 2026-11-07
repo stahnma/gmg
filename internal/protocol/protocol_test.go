@@ -2,6 +2,7 @@ package protocol
 
 import (
 	"encoding/hex"
+	"strings"
 	"testing"
 )
 
@@ -129,6 +130,41 @@ func TestParseCommand(t *testing.T) {
 	for _, tt := range tests {
 		if got := ParseCommand(tt.in); got != tt.want {
 			t.Errorf("ParseCommand(%q) = %+v, want %+v", tt.in, got, tt.want)
+		}
+	}
+}
+
+// Status responses captured from a real grill (doc/decode.txt).
+func TestParseRealGrillCaptures(t *testing.T) {
+	tests := []struct {
+		name, hex string
+		want      Status
+	}{
+		{"on, 325°F, probe 80°F, food target 168°F",
+			"5552 4501 5000 4501 0101 1432 1919 0000 0000 0000 ffff ffff 0000 0000 a800 0100 0364 0000",
+			Status{State: "on", IsOn: true, CurrentGrillTemp: 325, DesiredGrillTemp: 325, CurrentFoodTemp: 80, DesiredFoodTemp: 168}},
+		{"on, 161°F, no probe (557)",
+			"5552 a100 2d02 9600 0101 1432 1919 0000 0000 0000 ffff ffff 0000 0000 ab00 0100 0364 0000",
+			Status{State: "on", IsOn: true, CurrentGrillTemp: 161, DesiredGrillTemp: 150, CurrentFoodTemp: 0, DesiredFoodTemp: 171}},
+		{"fan mode, grill off",
+			"5552 5b00 2d02 9600 0101 1432 1919 0000 0000 0000 ffff ffff 0000 0000 0000 0200 0432 0000",
+			Status{State: "fan mode", FanModeActive: true, CurrentGrillTemp: 91}},
+		{"off",
+			"5552 5a00 2d02 9600 0101 1432 1919 0000 0000 0000 ffff ffff 0000 0000 0000 0000 044b 0000",
+			Status{State: "off", CurrentGrillTemp: 90}},
+		{"low pellet alarm",
+			"5552 4900 2d02 9600 0101 1432 1919 0000 0000 0000 ffff ffff 8000 0000 0000 0000 0100 0000",
+			Status{State: "off", CurrentGrillTemp: 73, LowPelletAlarmActive: true}},
+	}
+	for _, tt := range tests {
+		b, err := hex.DecodeString(strings.ReplaceAll(tt.hex, " ", ""))
+		if err != nil {
+			t.Fatal(err)
+		}
+		got := mustParse(t, b)
+		got.Hex = ""
+		if got != tt.want {
+			t.Errorf("%s:\n got %+v\nwant %+v", tt.name, got, tt.want)
 		}
 	}
 }
