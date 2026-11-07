@@ -1,7 +1,7 @@
 APP ?= gmg
 GOFLAGS_BUILD = -trimpath -ldflags="-s -w"
 
-.PHONY: help web build dev test check e2e image image-emulator up down logs clean
+.PHONY: help web build run dev test check e2e image image-emulator up down logs clean
 
 help: ## Show this help
 	@awk 'BEGIN {FS = ":.*?## "} /^[a-zA-Z0-9_-]+:.*?## / {printf "\033[36m%-16s\033[0m %s\n", $$1, $$2}' $(MAKEFILE_LIST)
@@ -18,6 +18,9 @@ web: web/node_modules ## Build the web UI into web/dist (embedded in the server)
 build: web ## Build bin/gmg (with the UI) and bin/gmg-emulator
 	CGO_ENABLED=0 go build $(GOFLAGS_BUILD) -o bin/gmg ./cmd/gmg
 	CGO_ENABLED=0 go build $(GOFLAGS_BUILD) -o bin/gmg-emulator ./cmd/gmg-emulator
+
+run: build ## Build and run bin/gmg locally (reads .env; ENV_FILE=path for another file)
+	./bin/gmg $(if $(ENV_FILE),--env-file $(ENV_FILE))
 
 dev: web/node_modules ## Run emulator, server (:3001) and Vite dev server (:3000) locally
 	@trap 'kill 0' EXIT INT TERM; \

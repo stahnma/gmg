@@ -102,6 +102,7 @@ Commands return `OK`. They return `400` with a message when the grill can't acce
 **Prerequisites:** Go 1.26+, Node 24+, GNU Make, Docker (for images and end-to-end tests). With [flox](https://flox.dev), `flox activate` provides Go, Node and Make.
 
 ```sh
+make run     # build and run bin/gmg with your .env (http://localhost:3001)
 make dev     # emulator + server (:3001) + Vite dev server with hot reload at http://localhost:3000
 make test    # Go tests (with the race detector) and web UI tests
 make check   # gofmt, go vet, svelte-check
