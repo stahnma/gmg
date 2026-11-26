@@ -61,7 +61,7 @@ Settings are environment variables, or the same names in a `.env` file (see [`.e
 
 | Variable | Description | Default |
 |----------|-------------|---------|
-| `GMG_GRILL_HOST` | Grill IP address. A broadcast address (containing `255`) means discover the grill on the network | `255.255.255.255` |
+| `GMG_GRILL_HOST` | Grill IP address. A broadcast address (containing `255`) means discover the grill on the network, and discover it again if it stops answering (for example after getting a new DHCP address) | `255.255.255.255` |
 | `GMG_GRILL_PORT` | Grill UDP port | `8080` |
 | `GMG_GRILL_TRIES` | Resends per command before giving up | `5` |
 | `GMG_GRILL_RETRYMS` | Wait for a reply before resending (ms) | `2000` |

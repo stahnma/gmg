@@ -224,3 +224,61 @@ func TestDiscoverNoResponse(t *testing.T) {
 		t.Fatalf("got %v", err)
 	}
 }
+
+func TestRediscoverAfterAddressChange(t *testing.T) {
+	// One listener; replies come from 127.0.0.2 first, then from 127.0.0.3,
+	// as if the grill had been given a new address.
+	conn, err := net.ListenPacket("udp4", "0.0.0.0:0")
+	if err != nil {
+		t.Fatal(err)
+	}
+	var outs [2]net.PacketConn
+	for i, a := range []string{"127.0.0.2:0", "127.0.0.3:0"} {
+		if outs[i], err = net.ListenPacket("udp4", a); err != nil {
+			t.Skipf("can't bind %s: %v", a, err)
+		}
+	}
+	t.Cleanup(func() { conn.Close(); outs[0].Close(); outs[1].Close() })
+	var which atomic.Int32
+	go func() {
+		buf := make([]byte, 1024)
+		for {
+			n, from, err := conn.ReadFrom(buf)
+			if err != nil {
+				return
+			}
+			if string(buf[:n]) == protocol.CmdGetGrillID {
+				outs[which.Load()].WriteTo([]byte(emulator.GrillID), from)
+			}
+		}
+	}()
+
+	c := New("127.0.0.255", conn.LocalAddr().(*net.UDPAddr).Port, 2, fastRetry, nil)
+	if err := c.Discover(context.Background()); err != nil || c.Host() != "127.0.0.2" {
+		t.Fatalf("first discovery: %v, host %q", err, c.Host())
+	}
+	which.Store(1)
+	if err := c.Discover(context.Background()); err != nil || c.Host() != "127.0.0.3" {
+		t.Fatalf("second discovery should follow the grill: %v, host %q", err, c.Host())
+	}
+}
+
+func TestFailedRediscoveryKeepsLastAddress(t *testing.T) {
+	port, _ := fakePeer(t, "0.0.0.0:0", "127.0.0.2:0", func(req string) []byte {
+		if req == protocol.CmdGetGrillID {
+			return []byte(emulator.GrillID)
+		}
+		return nil
+	})
+	c := New("127.0.0.255", port, 1, fastRetry, nil)
+	if err := c.Discover(context.Background()); err != nil {
+		t.Fatal(err)
+	}
+	c.port = 1 // nothing answers there
+	if err := c.Discover(context.Background()); err == nil {
+		t.Fatal("expected an error")
+	}
+	if c.Host() != "127.0.0.2" {
+		t.Fatalf("host %q", c.Host())
+	}
+}

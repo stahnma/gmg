@@ -157,3 +157,20 @@ func TestFailedDiscoveryIsUnhealthy(t *testing.T) {
 		t.Fatalf("got %+v", h)
 	}
 }
+
+func TestRediscoversAfterRepeatedStatusFailures(t *testing.T) {
+	g := &fakeGrill{}
+	g.failStatus.Store(true)
+	run(t, g, func() bool { return g.discovers.Load() >= 3 })
+	if s := g.statusCalls.Load(); s < 2*RediscoverAfter {
+		t.Fatalf("rediscovered too eagerly: %d discoveries after %d status calls", g.discovers.Load(), s)
+	}
+}
+
+func TestNoRediscoveryWhileHealthy(t *testing.T) {
+	g := &fakeGrill{}
+	run(t, g, func() bool { return g.statusCalls.Load() >= 10 })
+	if n := g.discovers.Load(); n != 1 {
+		t.Fatalf("discoveries: %d", n)
+	}
+}
