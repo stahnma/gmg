@@ -9,6 +9,7 @@ export interface GrillStatus {
   desiredFoodTemp: number
   fanModeActive: boolean
   lowPelletAlarmActive: boolean
+  foodProbeConnected?: boolean // false when no probe is plugged in; absent from older servers
 }
 
 /** Whether the grill is answering the server's polls (`connection` event). */

@@ -23,6 +23,7 @@ const (
 	TypeTargetFoodTempReached  = "targetFoodTempReached"
 	TypeLowPelletAlarmActive   = "lowPelletAlarmActive"
 	TypeGrillTempDropped       = "grillTempDropped"
+	TypeFoodProbeDisconnected  = "foodProbeDisconnected"
 	TypeGrillUnreachable       = "grillUnreachable"
 	TypeGrillReachable         = "grillReachable"
 )
@@ -104,6 +105,30 @@ func (h *LowPellet) Check(s protocol.Status) *Alert {
 		Name:   "Grill Pellet Alarm",
 		Reason: "The grill is low on pellets. Please inspect the hopper as soon as possible!",
 		Beep:   beep(TypeLowPelletAlarmActive),
+		Level:  "warning",
+	}
+}
+
+// ProbeDisconnected fires when the food probe stops reporting (unplugged or
+// fell out) while the grill is on and a food target is set, which would
+// otherwise silently stop the food target alert from ever firing. It
+// re-arms when the probe is plugged back in.
+type ProbeDisconnected struct{ connected, seen bool }
+
+func (h *ProbeDisconnected) Check(s protocol.Status) *Alert {
+	if !s.IsOn {
+		*h = ProbeDisconnected{}
+		return nil
+	}
+	was, seen := h.connected, h.seen
+	h.connected, h.seen = s.FoodProbeConnected, true
+	if !seen || !was || s.FoodProbeConnected || s.DesiredFoodTemp == 0 {
+		return nil
+	}
+	return &Alert{
+		Type:   TypeFoodProbeDisconnected,
+		Name:   "Food Probe Disconnected",
+		Reason: fmt.Sprintf("The food probe stopped reporting while the food target is %d °F. Check that it's plugged in.", s.DesiredFoodTemp),
 		Level:  "warning",
 	}
 }
@@ -206,7 +231,7 @@ func (u *Unreachable) Check(reachable bool, lastSeen *time.Time, last protocol.S
 
 // DefaultHandlers returns the standard set of alert handlers.
 func DefaultHandlers() []Handler {
-	return []Handler{&LowPellet{}, &TargetFoodTemp{}, &TargetGrillTemp{}}
+	return []Handler{&LowPellet{}, &TargetFoodTemp{}, &TargetGrillTemp{}, &ProbeDisconnected{}}
 }
 
 // Sender delivers an alert somewhere.

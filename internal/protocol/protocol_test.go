@@ -73,6 +73,11 @@ func TestParseStatusTemperatures(t *testing.T) {
 			t.Errorf("%s: got %d, want %d", tt.name, got, tt.want)
 		}
 	}
+	for raw, want := range map[int]bool{0: true, 165: true, 556: true, 557: false, 600: false} {
+		if got := mustParse(t, buf(0, raw, 0, 0, 0, 1)).FoodProbeConnected; got != want {
+			t.Errorf("probe reading %d: connected %v, want %v", raw, got, want)
+		}
+	}
 }
 
 func TestParseStatusLowPellet(t *testing.T) {
@@ -103,7 +108,7 @@ func TestEncodeParseRoundTrip(t *testing.T) {
 	raw := RawStatus{GrillTemp: 412, ProbeTemp: 163, GrillSetTemp: 450, ProbeSetTemp: 165, State: StateOn, Warn: WarnLowPellet}
 	s := mustParse(t, raw.Encode())
 	want := Status{State: "on", Hex: hex.EncodeToString(raw.Encode()), IsOn: true, CurrentGrillTemp: 412,
-		DesiredGrillTemp: 450, CurrentFoodTemp: 163, DesiredFoodTemp: 165, LowPelletAlarmActive: true}
+		DesiredGrillTemp: 450, CurrentFoodTemp: 163, DesiredFoodTemp: 165, LowPelletAlarmActive: true, FoodProbeConnected: true}
 	if s != want {
 		t.Fatalf("round trip:\n got %+v\nwant %+v", s, want)
 	}
@@ -142,13 +147,13 @@ func TestParseRealGrillCaptures(t *testing.T) {
 	}{
 		{"on, 325°F, probe 80°F, food target 168°F",
 			"5552 4501 5000 4501 0101 1432 1919 0000 0000 0000 ffff ffff 0000 0000 a800 0100 0364 0000",
-			Status{State: "on", IsOn: true, CurrentGrillTemp: 325, DesiredGrillTemp: 325, CurrentFoodTemp: 80, DesiredFoodTemp: 168}},
+			Status{State: "on", IsOn: true, CurrentGrillTemp: 325, DesiredGrillTemp: 325, CurrentFoodTemp: 80, DesiredFoodTemp: 168, FoodProbeConnected: true}},
 		{"on, 161°F, no probe (557)",
 			"5552 a100 2d02 9600 0101 1432 1919 0000 0000 0000 ffff ffff 0000 0000 ab00 0100 0364 0000",
 			Status{State: "on", IsOn: true, CurrentGrillTemp: 161, DesiredGrillTemp: 150, CurrentFoodTemp: 0, DesiredFoodTemp: 171}},
 		{"fan mode, grill off",
 			"5552 5b00 2d02 9600 0101 1432 1919 0000 0000 0000 ffff ffff 0000 0000 0000 0200 0432 0000",
-			Status{State: "fan mode", FanModeActive: true, CurrentGrillTemp: 91}},
+			Status{State: "fan mode", FanModeActive: true, CurrentGrillTemp: 91}}, // 557: no probe
 		{"off",
 			"5552 5a00 2d02 9600 0101 1432 1919 0000 0000 0000 ffff ffff 0000 0000 0000 0000 044b 0000",
 			Status{State: "off", CurrentGrillTemp: 90}},
