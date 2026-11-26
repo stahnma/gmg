@@ -129,6 +129,8 @@ make build   # bin/gmg (UI embedded) and bin/gmg-emulator
 make help    # everything else
 ```
 
+The tests and `make e2e` run against the emulator. Before relying on a change for an unattended cook, go through [`doc/real-grill-testing.md`](doc/real-grill-testing.md) on a real grill.
+
 ### Layout
 
 | Path | |
@@ -141,6 +143,7 @@ make help    # everything else
 | `web/` | Svelte + TypeScript UI, built with Vite and embedded into the server binary |
 | `e2e/` | Playwright checks against the Docker images |
 | `doc/decode.txt` | Notes and captures from decoding the grill's status format |
+| `doc/real-grill-testing.md` | Checklist for testing against a real grill, and how to capture status frames |
 
 ## Tech stack
 - **Server and emulator:** Go (standard library + pure-Go SQLite, no CGO)
