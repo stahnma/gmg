@@ -25,6 +25,7 @@ type Config struct {
 	AudioEnabled     bool          // GMG_ALERTS_AUDIO_ENABLED
 	UnreachableAfter time.Duration // GMG_ALERTS_UNREACHABLE_SECONDS; 0 disables the alert
 	LogLevel         string        // GMG_LOG_LEVEL: debug, info, warn, error
+	CORSOrigins      string        // GMG_CORS_ORIGINS: comma-separated origins allowed to call the API; "*" for any
 }
 
 // Default returns the defaults used when a variable is unset.
@@ -44,6 +45,17 @@ func Default() Config {
 		UnreachableAfter: 60 * time.Second,
 		LogLevel:         "info",
 	}
+}
+
+// Origins returns CORSOrigins as a list, without blanks or trailing slashes.
+func (c Config) Origins() []string {
+	var out []string
+	for _, o := range strings.Split(c.CORSOrigins, ",") {
+		if o = strings.TrimRight(strings.TrimSpace(o), "/"); o != "" {
+			out = append(out, o)
+		}
+	}
+	return out
 }
 
 // Load reads the configuration using getenv (usually os.Getenv).
@@ -90,6 +102,7 @@ func Load(getenv func(string) string) (Config, error) {
 	str("GMG_ALERTS_SLACK_CHANNEL", &c.SlackChannel)
 	str("GMG_ALERTS_SLACK_USERNAME", &c.SlackUsername)
 	str("GMG_LOG_LEVEL", &c.LogLevel)
+	str("GMG_CORS_ORIGINS", &c.CORSOrigins)
 	seconds("GMG_ALERTS_UNREACHABLE_SECONDS", &c.UnreachableAfter)
 	if v := strings.TrimSpace(getenv("GMG_ALERTS_AUDIO_ENABLED")); v != "" {
 		// Same rule as the Node server: only "true" enables audio.

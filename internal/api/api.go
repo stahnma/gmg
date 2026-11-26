@@ -9,6 +9,8 @@ import (
 	"io/fs"
 	"log/slog"
 	"net/http"
+	"net/url"
+	"slices"
 	"strconv"
 	"strings"
 	"time"
@@ -44,6 +46,10 @@ type Server struct {
 	Static     fs.FS                          // web UI and sounds; optional
 	Log        *slog.Logger
 	KeepAlive  time.Duration // SSE keep-alive comment interval; default 25s
+	// AllowedOrigins lists other origins (e.g. "https://grill.example.com")
+	// allowed to call the API from a browser; "*" allows any. Same-origin
+	// requests are always allowed.
+	AllowedOrigins []string
 }
 
 // Handler returns the HTTP handler.
@@ -76,7 +82,7 @@ func (s *Server) Handler() http.Handler {
 	mux.HandleFunc("GET /api", apiDocs)
 	mux.HandleFunc("GET /api/{$}", apiDocs)
 	mux.HandleFunc("/", s.static) // also turns unknown routes and wrong methods into 404
-	return logRequests(s.Log, cors(mux))
+	return logRequests(s.Log, cors(s.AllowedOrigins, mux))
 }
 
 //go:embed docs.html
@@ -235,10 +241,38 @@ func writeJSON(w http.ResponseWriter, v any) {
 	w.Write(b)
 }
 
-// cors allows the API to be called from other origins, as the Node server did.
-func cors(next http.Handler) http.Handler {
+// cors lets browsers on the allowed origins call the API, and refuses
+// commands from any other site. Without it, any web page opened by someone
+// on the LAN could turn the grill on. Requests without an Origin header
+// (curl, scripts) are not affected.
+func cors(allowed []string, next http.Handler) http.Handler {
+	anyOrigin := slices.Contains(allowed, "*")
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Access-Control-Allow-Origin", "*")
+		origin := r.Header.Get("Origin")
+		safe := r.Method == http.MethodGet || r.Method == http.MethodHead
+		if origin == "" {
+			// Browsers send Origin with every PUT; this covers old ones.
+			if !safe && !anyOrigin && r.Header.Get("Sec-Fetch-Site") == "cross-site" {
+				writeText(w, http.StatusForbidden, "Cross-origin request refused")
+				return
+			}
+			next.ServeHTTP(w, r)
+			return
+		}
+		if sameOrigin(origin, r.Host) {
+			next.ServeHTTP(w, r)
+			return
+		}
+		if !anyOrigin && !slices.Contains(allowed, origin) {
+			if !safe { // includes preflights
+				writeText(w, http.StatusForbidden, "Cross-origin request refused: "+origin+" is not in GMG_CORS_ORIGINS")
+				return
+			}
+			next.ServeHTTP(w, r) // no CORS headers, so the browser won't expose the response
+			return
+		}
+		w.Header().Set("Access-Control-Allow-Origin", origin)
+		w.Header().Add("Vary", "Origin")
 		if r.Method == http.MethodOptions {
 			w.Header().Set("Access-Control-Allow-Methods", "GET,HEAD,PUT,POST,DELETE")
 			w.Header().Set("Access-Control-Allow-Headers", r.Header.Get("Access-Control-Request-Headers"))
@@ -247,6 +281,13 @@ func cors(next http.Handler) http.Handler {
 		}
 		next.ServeHTTP(w, r)
 	})
+}
+
+// sameOrigin reports whether origin (scheme://host[:port]) names the host
+// the request was sent to.
+func sameOrigin(origin, host string) bool {
+	u, err := url.Parse(origin)
+	return err == nil && u.Host != "" && strings.EqualFold(u.Host, host)
 }
 
 type statusRecorder struct {

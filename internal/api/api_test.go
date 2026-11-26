@@ -176,12 +176,61 @@ func TestStaticFiles(t *testing.T) {
 }
 
 func TestCORS(t *testing.T) {
-	_, _, _, h := setup()
-	if got := do(h, "GET", "/api/status").Header().Get("Access-Control-Allow-Origin"); got != "*" {
-		t.Errorf("ACAO %q", got)
+	g, _, s, _ := setup()
+	req := func(h http.Handler, method, path string, hdr ...string) *httptest.ResponseRecorder {
+		r := httptest.NewRequest(method, path, nil)
+		r.Host = "grill.local:3001"
+		for i := 0; i < len(hdr); i += 2 {
+			r.Header.Set(hdr[i], hdr[i+1])
+		}
+		rec := httptest.NewRecorder()
+		h.ServeHTTP(rec, r)
+		return rec
 	}
-	if rec := do(h, "OPTIONS", "/api/poweron"); rec.Code != 204 {
-		t.Errorf("preflight %d", rec.Code)
+	h := s.Handler()
+
+	// No Origin (curl, scripts) and same-origin requests work as before.
+	if rec := req(h, "PUT", "/api/poweron"); rec.Code != 200 {
+		t.Errorf("no origin: %d", rec.Code)
+	}
+	if rec := req(h, "PUT", "/api/poweron", "Origin", "http://grill.local:3001"); rec.Code != 200 || rec.Header().Get("Access-Control-Allow-Origin") != "" {
+		t.Errorf("same origin: %d %q", rec.Code, rec.Header().Get("Access-Control-Allow-Origin"))
+	}
+
+	// Another site can't send commands, and gets no CORS headers.
+	g.calls = nil
+	evil := "https://evil.example"
+	if rec := req(h, "PUT", "/api/poweron", "Origin", evil); rec.Code != 403 || len(g.calls) != 0 {
+		t.Errorf("cross-site PUT: %d, calls %v", rec.Code, g.calls)
+	}
+	if rec := req(h, "OPTIONS", "/api/poweron", "Origin", evil, "Access-Control-Request-Method", "PUT"); rec.Code != 403 || rec.Header().Get("Access-Control-Allow-Origin") != "" {
+		t.Errorf("cross-site preflight: %d %q", rec.Code, rec.Header().Get("Access-Control-Allow-Origin"))
+	}
+	if rec := req(h, "GET", "/api/status", "Origin", evil); rec.Code != 200 || rec.Header().Get("Access-Control-Allow-Origin") != "" {
+		t.Errorf("cross-site GET should get no CORS headers: %d %q", rec.Code, rec.Header().Get("Access-Control-Allow-Origin"))
+	}
+	if rec := req(h, "PUT", "/api/poweron", "Sec-Fetch-Site", "cross-site"); rec.Code != 403 {
+		t.Errorf("cross-site without Origin: %d", rec.Code)
+	}
+
+	// Allowed origins get CORS headers.
+	s.AllowedOrigins = []string{"https://ui.example"}
+	h = s.Handler()
+	if rec := req(h, "OPTIONS", "/api/poweron", "Origin", "https://ui.example", "Access-Control-Request-Method", "PUT"); rec.Code != 204 || rec.Header().Get("Access-Control-Allow-Origin") != "https://ui.example" {
+		t.Errorf("allowed preflight: %d %q", rec.Code, rec.Header().Get("Access-Control-Allow-Origin"))
+	}
+	if rec := req(h, "PUT", "/api/poweron", "Origin", "https://ui.example"); rec.Code != 200 || rec.Header().Get("Vary") != "Origin" {
+		t.Errorf("allowed PUT: %d", rec.Code)
+	}
+	if rec := req(h, "PUT", "/api/poweron", "Origin", evil); rec.Code != 403 {
+		t.Errorf("other origin with allow-list: %d", rec.Code)
+	}
+
+	// "*" restores the old allow-everything behaviour.
+	s.AllowedOrigins = []string{"*"}
+	h = s.Handler()
+	if rec := req(h, "PUT", "/api/poweron", "Origin", evil); rec.Code != 200 || rec.Header().Get("Access-Control-Allow-Origin") != evil {
+		t.Errorf("wildcard: %d %q", rec.Code, rec.Header().Get("Access-Control-Allow-Origin"))
 	}
 }
 

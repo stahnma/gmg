@@ -32,7 +32,7 @@
 <main>
 <p><a href="/">&larr; Dashboard</a></p>
 <h1>GMG API</h1>
-<p>HTTP API for monitoring and controlling the grill. Paths are relative to this server. Cross-origin requests are allowed.</p>
+<p>HTTP API for monitoring and controlling the grill. Paths are relative to this server. Browsers on other origins can call it only when the origin is listed in <code>GMG_CORS_ORIGINS</code>; commands from other sites get <code>403</code>. Clients that send no <code>Origin</code> header, like <code>curl</code>, are not affected.</p>
 
 <h2>Endpoints</h2>
 <div class="table"><table>
@@ -54,6 +54,7 @@
 <ul>
   <li><code>400</code> &mdash; the grill can't accept the command, e.g. <code>Cannot set grill temperature when the grill is off!</code> or an invalid temperature.</li>
   <li><code>500</code> &mdash; the grill didn't respond.</li>
+  <li><code>403</code> &mdash; a browser on another site sent the command (see <code>GMG_CORS_ORIGINS</code>).</li>
   <li><code>404</code> &mdash; unknown path or wrong method.</li>
 </ul>
 
