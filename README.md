@@ -68,14 +68,14 @@ Settings are environment variables, or the same names in a `.env` file (see [`.e
 | `GMG_STATUS_POLLING_INTERVAL` | Status poll interval (ms) | `5000` |
 | `GMG_DB_PATH` | Directory for the history database (`grill_data.db`) | `data` (`/data` in Docker) |
 | `GMG_DB_MAX_SIZE_MB` | Database size limit; the oldest 10% of rows are pruned when exceeded | `50` |
-| `GMG_ALERTS_AUDIO_ENABLED` | Play a sound in the browser when an alert fires (`true`/`false`) | `true` |
+| `GMG_ALERTS_AUDIO_ENABLED` | Play a sound in the browser when an alert fires (`true`/`false`); no sound files ship, see below | `false` |
 | `GMG_ALERTS_SLACK_WEBHOOKURL` | Slack incoming-webhook URL; Slack alerts are off when unset | none |
 | `GMG_ALERTS_SLACK_CHANNEL` | Slack channel | `#alerts` |
 | `GMG_ALERTS_SLACK_USERNAME` | Slack username | `grill-bot` |
 | `GMG_LOG_LEVEL` | `debug`, `info`, `warn` or `error` | `info` |
 | `PORT` | HTTP port | `3001` (`80` in Docker) |
 
-To change the alert sounds, replace the mp3 files in `web/public/alerts/` and rebuild.
+No alert sounds are included. To use audio alerts, add `targetGrillTempReached.mp3`, `targetFoodTempReached.mp3` and `lowPelletAlarmActive.mp3` to `web/public/alerts/`, rebuild, and set `GMG_ALERTS_AUDIO_ENABLED=true`.
 
 ## Alerts
 

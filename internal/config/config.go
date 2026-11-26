@@ -39,7 +39,7 @@ func Default() Config {
 		DBMaxSizeMB:     50,
 		SlackChannel:    "#alerts",
 		SlackUsername:   "grill-bot",
-		AudioEnabled:    true,
+		AudioEnabled:    false,
 		LogLevel:        "info",
 	}
 }

@@ -16,7 +16,7 @@ func TestDefaults(t *testing.T) {
 	if c != Default() {
 		t.Fatalf("got %+v", c)
 	}
-	if c.SlackWebhookURL != "" || !c.AudioEnabled || c.GrillHost != "255.255.255.255" || c.PollingInterval != 5*time.Second {
+	if c.SlackWebhookURL != "" || c.AudioEnabled || c.GrillHost != "255.255.255.255" || c.PollingInterval != 5*time.Second {
 		t.Fatalf("unexpected defaults %+v", c)
 	}
 }
@@ -40,7 +40,7 @@ func TestFromEnvironment(t *testing.T) {
 }
 
 func TestAudioFlag(t *testing.T) {
-	for v, want := range map[string]bool{"": true, "true": true, "TRUE": true, "false": false, "0": false, "no": false} {
+	for v, want := range map[string]bool{"": false, "true": true, "TRUE": true, "false": false, "0": false, "no": false} {
 		c, err := Load(env(map[string]string{"GMG_ALERTS_AUDIO_ENABLED": v}))
 		if err != nil || c.AudioEnabled != want {
 			t.Errorf("GMG_ALERTS_AUDIO_ENABLED=%q: got %v (%v), want %v", v, c.AudioEnabled, err, want)

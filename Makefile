@@ -14,7 +14,7 @@ web/node_modules: web/package-lock.json
 
 # Inputs for the file targets below, so make only rebuilds what changed.
 WEB_SRC := web/index.html web/package.json web/vite.config.ts web/svelte.config.js \
-	web/tsconfig.json $(shell find web/src web/public -type f)
+	web/tsconfig.json $(shell find web/src $(wildcard web/public) -type f)
 GO_SRC  := go.mod go.sum $(shell find cmd internal web -name '*.go' -not -path 'web/node_modules/*')
 
 web/dist/index.html: web/node_modules $(WEB_SRC)
