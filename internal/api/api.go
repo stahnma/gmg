@@ -3,6 +3,7 @@ package api
 
 import (
 	"context"
+	_ "embed"
 	"encoding/json"
 	"errors"
 	"io/fs"
@@ -69,8 +70,19 @@ func (s *Server) Handler() http.Handler {
 	}))
 	mux.HandleFunc("GET /api/temperature/history", s.history)
 	mux.HandleFunc("GET /api/events", s.events)
+	mux.HandleFunc("GET /api", apiDocs)
+	mux.HandleFunc("GET /api/{$}", apiDocs)
 	mux.HandleFunc("/", s.static) // also turns unknown routes and wrong methods into 404
 	return logRequests(s.Log, cors(mux))
+}
+
+//go:embed docs.html
+var docsHTML []byte
+
+// apiDocs serves the API documentation page.
+func apiDocs(w http.ResponseWriter, _ *http.Request) {
+	w.Header().Set("Content-Type", "text/html; charset=utf-8")
+	w.Write(docsHTML)
 }
 
 func temp(r *http.Request) (int, error) {

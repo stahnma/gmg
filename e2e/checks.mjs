@@ -16,6 +16,7 @@ check(r.status === 200 && JSON.parse(r.body).state === 'off', 'GET /api/status: 
 r = await api('PUT', '/api/temperature/grill/225')
 check(r.status === 400 && r.body === 'Cannot set grill temperature when the grill is off!', 'set temperature while off -> 400')
 check((await api('GET', '/api/nope')).status === 404, 'unknown route -> 404')
+check((await api('GET', '/api')).status === 200, 'API docs page is served')
 
 // --- Browser ---
 const browser = await chromium.launch()

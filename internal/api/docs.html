@@ -1,0 +1,110 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>GMG API</title>
+<style>
+  :root {
+    --text: #eeeeee; --text-secondary: #bdbdbd; --bg: #212121; --paper: rgb(48, 48, 48);
+    --divider: rgba(255, 255, 255, 0.12); --link: #90caf9;
+    color-scheme: dark;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--text); font: 16px/1.5 Roboto, Helvetica, Arial, sans-serif; }
+  main { max-width: 860px; margin: 0 auto; padding: 16px 16px 48px; }
+  h1 { font-size: 1.75rem; font-weight: 400; margin: 8px 0 4px; }
+  h2 { font-size: 1.25rem; font-weight: 500; margin: 32px 0 8px; padding-bottom: 4px; border-bottom: 1px solid var(--divider); }
+  h3 { font-size: 1rem; font-weight: 500; margin: 20px 0 4px; }
+  p, li { color: var(--text-secondary); }
+  a { color: var(--link); }
+  code { font: 0.875rem/1.4 ui-monospace, Menlo, Consolas, monospace; }
+  pre { background: var(--paper); padding: 12px; border-radius: 4px; overflow-x: auto; }
+  .table { overflow-x: auto; }
+  table { width: 100%; border-collapse: collapse; font-size: 0.9375rem; }
+  th, td { text-align: left; vertical-align: top; padding: 6px 8px; border-bottom: 1px solid var(--divider); }
+  th { font-weight: 500; }
+  td:first-child { white-space: nowrap; }
+  .method { display: inline-block; min-width: 3.2em; font-weight: 600; }
+</style>
+</head>
+<body>
+<main>
+<p><a href="/">&larr; Dashboard</a></p>
+<h1>GMG API</h1>
+<p>HTTP API for monitoring and controlling the grill. Paths are relative to this server. Cross-origin requests are allowed.</p>
+
+<h2>Endpoints</h2>
+<div class="table"><table>
+  <tr><th>Request</th><th>Description</th></tr>
+  <tr><td><code><span class="method">GET</span>/api/status</code></td><td>Current grill status, read from the grill (<a href="#status">Status</a>).</td></tr>
+  <tr><td><code><span class="method">PUT</span>/api/powertoggle</code></td><td>Toggle power.</td></tr>
+  <tr><td><code><span class="method">PUT</span>/api/poweron</code></td><td>Turn the grill on.</td></tr>
+  <tr><td><code><span class="method">PUT</span>/api/poweroff</code></td><td>Turn the grill off.</td></tr>
+  <tr><td><code><span class="method">PUT</span>/api/temperature/grill/{°F}</code></td><td>Set the target grill temperature. The grill must be on.</td></tr>
+  <tr><td><code><span class="method">PUT</span>/api/temperature/food/{°F}</code></td><td>Set the target food temperature. The grill must be on.</td></tr>
+  <tr><td><code><span class="method">GET</span>/api/temperature/history?since={unix seconds}</code></td><td>Recorded temperatures at or after <code>since</code>, oldest first (<a href="#history">History row</a>). A missing or invalid <code>since</code> returns <code>[]</code>.</td></tr>
+  <tr><td><code><span class="method">GET</span>/api/events</code></td><td>Live <a href="#events">event stream</a> (Server-Sent Events).</td></tr>
+  <tr><td><code><span class="method">GET</span>/api</code></td><td>This page.</td></tr>
+</table></div>
+
+<h3>Command responses</h3>
+<p>Commands (<code>PUT</code>) return <code>200</code> with the plain-text body <code>OK</code>. Errors are plain text:</p>
+<ul>
+  <li><code>400</code> &mdash; the grill can't accept the command, e.g. <code>Cannot set grill temperature when the grill is off!</code> or an invalid temperature.</li>
+  <li><code>500</code> &mdash; the grill didn't respond.</li>
+  <li><code>404</code> &mdash; unknown path or wrong method.</li>
+</ul>
+
+<h2 id="status">Status</h2>
+<pre><code>{
+  "state": "on",
+  "_hex": "5552…",
+  "isOn": true,
+  "currentGrillTemp": 224,
+  "desiredGrillTemp": 225,
+  "currentFoodTemp": 140,
+  "desiredFoodTemp": 165,
+  "fanModeActive": false,
+  "lowPelletAlarmActive": false
+}</code></pre>
+<div class="table"><table>
+  <tr><th>Field</th><th>Description</th></tr>
+  <tr><td><code>state</code></td><td><code>on</code>, <code>off</code>, <code>fan mode</code> (cooling down after power off) or <code>unknown</code>.</td></tr>
+  <tr><td><code>_hex</code></td><td>Raw grill response, hex encoded (for debugging).</td></tr>
+  <tr><td><code>isOn</code>, <code>fanModeActive</code></td><td>Shortcuts for <code>state</code>.</td></tr>
+  <tr><td><code>currentGrillTemp</code>, <code>desiredGrillTemp</code></td><td>Grill temperature and target, °F.</td></tr>
+  <tr><td><code>currentFoodTemp</code>, <code>desiredFoodTemp</code></td><td>Food probe temperature and target, °F.</td></tr>
+  <tr><td><code>lowPelletAlarmActive</code></td><td>The grill reports low pellets.</td></tr>
+</table></div>
+
+<h2 id="history">History row</h2>
+<pre><code>[{ "temperature_log_id": 1, "timestamp": 1764172800, "grill_temperature": 224, "food_temperature": 140 }]</code></pre>
+<p><code>timestamp</code> is Unix seconds. <code>food_temperature</code> is <code>null</code> when no probe reading was recorded.</p>
+
+<h2 id="events">Event stream</h2>
+<p><code>GET /api/events</code> sends <a href="https://developer.mozilla.org/en-US/docs/Web/API/Server-sent_events">Server-Sent Events</a>. The latest status is sent on connect.</p>
+<div class="table"><table>
+  <tr><th>Event</th><th>Data</th></tr>
+  <tr><td><code>status</code></td><td>A <a href="#status">Status</a>, on every poll of the grill.</td></tr>
+  <tr><td><code>alert</code></td><td>An <a href="#alert">Alert</a>, when one fires.</td></tr>
+</table></div>
+
+<h3 id="alert">Alert</h3>
+<pre><code>{
+  "type": "targetGrillTempReached",
+  "name": "Target Grill Temperature Reached",
+  "reason": "Grill temperature has reached target temperature of 225",
+  "beep": "alerts/targetGrillTempReached.mp3",
+  "level": "info"
+}</code></pre>
+<p><code>type</code> is <code>targetGrillTempReached</code>, <code>targetFoodTempReached</code> or <code>lowPelletAlarmActive</code>. <code>level</code> is <code>info</code>, <code>warning</code> or <code>error</code>. <code>beep</code> is the sound file to play; it is omitted when audio alerts are disabled.</p>
+
+<h2>Examples</h2>
+<pre><code>curl http://HOST/api/status
+curl -X PUT http://HOST/api/temperature/grill/225
+curl "http://HOST/api/temperature/history?since=$(( $(date +%s) - 3600 ))"
+curl -N http://HOST/api/events</code></pre>
+</main>
+</body>
+</html>

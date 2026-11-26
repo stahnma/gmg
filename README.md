@@ -87,6 +87,8 @@ No alert sounds are included. To use audio alerts, add `targetGrillTempReached.m
 
 ## API
 
+The running server documents its API at `/api` (also linked from the dashboard's bottom bar).
+
 | Method | Path | |
 |--------|------|-|
 | `GET` | `/api/status` | Current grill status (JSON) |

@@ -121,10 +121,27 @@ func TestNotFound(t *testing.T) {
 	_, _, _, h := setup()
 	for _, c := range []struct{ method, path string }{
 		{"GET", "/api/nope"}, {"GET", "/api/poweron"}, {"POST", "/api/status"}, {"GET", "/nope.js"},
-		{"GET", "/%2e%2e/go.mod"}, {"PUT", "/index.html"},
+		{"GET", "/%2e%2e/go.mod"}, {"PUT", "/index.html"}, {"POST", "/api"},
 	} {
 		if rec := do(h, c.method, c.path); rec.Code != 404 || rec.Body.String() != "Not Found" {
 			t.Errorf("%s %s: %d %q", c.method, c.path, rec.Code, rec.Body.String())
+		}
+	}
+}
+
+func TestAPIDocs(t *testing.T) {
+	_, _, _, h := setup()
+	for _, path := range []string{"/api", "/api/"} {
+		rec := do(h, "GET", path)
+		if rec.Code != 200 || !strings.HasPrefix(rec.Header().Get("Content-Type"), "text/html") {
+			t.Fatalf("GET %s: %d %q", path, rec.Code, rec.Header().Get("Content-Type"))
+		}
+		// Every endpoint is documented.
+		for _, ep := range []string{"/api/status", "/api/powertoggle", "/api/poweron", "/api/poweroff",
+			"/api/temperature/grill/", "/api/temperature/food/", "/api/temperature/history", "/api/events"} {
+			if !strings.Contains(rec.Body.String(), ep) {
+				t.Errorf("GET %s: docs do not mention %s", path, ep)
+			}
 		}
 	}
 }

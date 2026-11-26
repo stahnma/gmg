@@ -4,6 +4,7 @@
 
 <nav aria-label="Main">
   <a href="/" aria-current="page"><Icon name="home" /><span>Home</span></a>
+  <a href="/api"><Icon name="code" /><span>API</span></a>
 </nav>
 
 <style>
