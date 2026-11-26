@@ -27,6 +27,8 @@ type Config struct {
 	LogLevel         string        // GMG_LOG_LEVEL: debug, info, warn, error
 	TempDropDegrees  int           // GMG_ALERTS_TEMPDROP_DEGREES; 0 disables the alert
 	TempDropFor      time.Duration // GMG_ALERTS_TEMPDROP_MINUTES
+	IgnitionDegrees  int           // GMG_ALERTS_IGNITION_DEGREES; 0 disables the alert
+	IgnitionWithin   time.Duration // GMG_ALERTS_IGNITION_MINUTES
 	GrillTempMin     int           // GMG_GRILL_TEMP_MIN: lowest grill target accepted (°F)
 	GrillTempMax     int           // GMG_GRILL_TEMP_MAX
 	FoodTempMin      int           // GMG_FOOD_TEMP_MIN: lowest food target accepted (°F)
@@ -51,6 +53,8 @@ func Default() Config {
 		UnreachableAfter: 60 * time.Second,
 		TempDropDegrees:  50,
 		TempDropFor:      5 * time.Minute,
+		IgnitionDegrees:  30,
+		IgnitionWithin:   15 * time.Minute,
 		GrillTempMin:     150,
 		GrillTempMax:     550,
 		FoodTempMin:      0,
@@ -136,6 +140,8 @@ func Load(getenv func(string) string) (Config, error) {
 	seconds("GMG_ALERTS_UNREACHABLE_SECONDS", &c.UnreachableAfter)
 	num("GMG_ALERTS_TEMPDROP_DEGREES", &c.TempDropDegrees)
 	minutes("GMG_ALERTS_TEMPDROP_MINUTES", &c.TempDropFor)
+	num("GMG_ALERTS_IGNITION_DEGREES", &c.IgnitionDegrees)
+	minutes("GMG_ALERTS_IGNITION_MINUTES", &c.IgnitionWithin)
 	if v := strings.TrimSpace(getenv("GMG_ALERTS_AUDIO_ENABLED")); v != "" {
 		// Same rule as the Node server: only "true" enables audio.
 		c.AudioEnabled = strings.EqualFold(v, "true")

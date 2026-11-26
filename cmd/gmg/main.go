@@ -90,6 +90,7 @@ func run() error {
 	}
 	handlers := append(alerts.DefaultHandlers(),
 		&alerts.TempDrop{Degrees: cfg.TempDropDegrees, For: cfg.TempDropFor},
+		&alerts.Ignition{Degrees: cfg.IgnitionDegrees, Within: cfg.IgnitionWithin},
 	)
 	alertManager := alerts.NewManager(handlers, senders, log.With("component", "alerts"))
 

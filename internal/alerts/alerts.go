@@ -24,6 +24,7 @@ const (
 	TypeLowPelletAlarmActive   = "lowPelletAlarmActive"
 	TypeGrillTempDropped       = "grillTempDropped"
 	TypeFoodProbeDisconnected  = "foodProbeDisconnected"
+	TypeIgnitionFailed         = "ignitionFailed"
 	TypeGrillUnreachable       = "grillUnreachable"
 	TypeGrillReachable         = "grillReachable"
 )
@@ -130,6 +131,65 @@ func (h *ProbeDisconnected) Check(s protocol.Status) *Alert {
 		Name:   "Food Probe Disconnected",
 		Reason: fmt.Sprintf("The food probe stopped reporting while the food target is %d °F. Check that it's plugged in.", s.DesiredFoodTemp),
 		Level:  "warning",
+	}
+}
+
+// Ignition fires when the grill was turned on but its temperature hasn't
+// risen by Degrees within Within: usually a failed igniter or a fire pot
+// full of ash. It only watches power-ons it sees (not a grill that was
+// already on when the server started), and holds off while the target is
+// too close to the starting temperature to tell (e.g. a restart while still
+// hot). Degrees <= 0 disables it.
+type Ignition struct {
+	Degrees int
+	Within  time.Duration
+	Now     func() time.Time // for tests; defaults to time.Now
+
+	seen, wasOn bool
+	armed       bool
+	start       time.Time
+	startTemp   int
+}
+
+func (h *Ignition) Check(s protocol.Status) *Alert {
+	if h.Degrees <= 0 {
+		return nil
+	}
+	now := time.Now
+	if h.Now != nil {
+		now = h.Now
+	}
+	seen, wasOn := h.seen, h.wasOn
+	h.seen, h.wasOn = true, s.IsOn
+	if !s.IsOn {
+		h.armed = false
+		return nil
+	}
+	if seen && !wasOn {
+		h.armed, h.start, h.startTemp = true, now(), s.CurrentGrillTemp
+	}
+	if !h.armed {
+		return nil
+	}
+	lit := h.startTemp + h.Degrees
+	if s.CurrentGrillTemp >= lit {
+		h.armed = false
+		return nil
+	}
+	if s.DesiredGrillTemp != 0 && s.DesiredGrillTemp <= lit {
+		return nil // target too close to tell; wait in case it's raised
+	}
+	elapsed := now().Sub(h.start)
+	if elapsed < h.Within {
+		return nil
+	}
+	h.armed = false
+	return &Alert{
+		Type: TypeIgnitionFailed,
+		Name: "Grill May Not Have Lit",
+		Reason: fmt.Sprintf("The grill was turned on %d min ago but is only at %d °F (it started at %d °F). The igniter may have failed or the fire pot may need cleaning.",
+			int(elapsed.Minutes()), s.CurrentGrillTemp, h.startTemp),
+		Level: "error",
 	}
 }
 
