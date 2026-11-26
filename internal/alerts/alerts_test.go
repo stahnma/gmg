@@ -324,3 +324,77 @@ func TestProbeDisconnected(t *testing.T) {
 		t.Fatalf("alert %+v", a)
 	}
 }
+
+func TestIgnition(t *testing.T) {
+	clock := time.Date(2026, 11, 26, 12, 0, 0, 0, time.UTC)
+	newH := func() *Ignition {
+		return &Ignition{Degrees: 30, Within: 15 * time.Minute, Now: func() time.Time { return clock }}
+	}
+	off := func(cur int) protocol.Status { return protocol.Status{CurrentGrillTemp: cur} }
+	at := func(h *Ignition, s protocol.Status, advance time.Duration) *Alert {
+		clock = clock.Add(advance)
+		return h.Check(s)
+	}
+
+	h := newH()
+	at(h, off(60), 0)
+	if at(h, grill(60, 225), time.Minute) != nil || at(h, grill(70, 225), 10*time.Minute) != nil {
+		t.Fatal("fired too early")
+	}
+	a := at(h, grill(75, 225), 5*time.Minute)
+	if a == nil || a.Type != TypeIgnitionFailed || a.Level != "error" || !strings.Contains(a.Reason, "15 min ago but is only at 75 °F (it started at 60 °F)") {
+		t.Fatalf("alert %+v", a)
+	}
+	if at(h, grill(75, 225), time.Hour) != nil {
+		t.Fatal("fired twice")
+	}
+
+	// Lights normally.
+	h = newH()
+	at(h, off(60), 0)
+	at(h, grill(60, 225), 0)
+	if at(h, grill(95, 225), 5*time.Minute) != nil || at(h, grill(80, 225), time.Hour) != nil {
+		t.Fatal("fired for a grill that lit")
+	}
+
+	// Already on when the server started: not watched.
+	h = newH()
+	at(h, grill(60, 225), 0)
+	if at(h, grill(60, 225), time.Hour) != nil {
+		t.Fatal("fired for a power-on it didn't see")
+	}
+
+	// Restarted while hot with a lower target: can't tell, no alert.
+	h = newH()
+	at(h, off(300), 0)
+	at(h, grill(300, 225), 0)
+	if at(h, grill(290, 225), time.Hour) != nil {
+		t.Fatal("fired for a hot restart")
+	}
+
+	// Starts with a low target that is raised later: still watched.
+	h = newH()
+	at(h, off(60), 0)
+	at(h, grill(60, 80), 0)
+	at(h, grill(65, 80), 5*time.Minute)
+	if at(h, grill(70, 225), 11*time.Minute) == nil {
+		t.Fatal("should fire once the target is raised and the grill still hasn't warmed")
+	}
+
+	// Turned off before the window: disarmed.
+	h = newH()
+	at(h, off(60), 0)
+	at(h, grill(60, 225), 0)
+	at(h, off(60), time.Minute)
+	if at(h, off(60), time.Hour) != nil {
+		t.Fatal("fired while off")
+	}
+
+	// Disabled.
+	h = &Ignition{Within: time.Minute, Now: func() time.Time { return clock }}
+	at(h, off(60), 0)
+	at(h, grill(60, 225), 0)
+	if at(h, grill(60, 225), time.Hour) != nil {
+		t.Fatal("fired while disabled")
+	}
+}
