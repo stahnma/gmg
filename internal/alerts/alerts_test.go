@@ -10,6 +10,7 @@ import (
 	"strings"
 	"sync"
 	"testing"
+	"time"
 
 	"github.com/stahnma/gmg/internal/protocol"
 )
@@ -181,5 +182,51 @@ func TestSlackSenderErrorStatus(t *testing.T) {
 	err := SlackSender{WebhookURL: srv.URL}.Send(context.Background(), Alert{})
 	if err == nil || !strings.Contains(err.Error(), "403") || !strings.Contains(err.Error(), "invalid_token") {
 		t.Fatalf("got %v", err)
+	}
+}
+
+func TestUnreachable(t *testing.T) {
+	t0 := time.Date(2026, 11, 26, 12, 0, 0, 0, time.UTC)
+	on := protocol.Status{IsOn: true, CurrentGrillTemp: 225}
+	at := func(s int) time.Time { return t0.Add(time.Duration(s) * time.Second) }
+	seen := &t0
+
+	u := &Unreachable{After: time.Minute}
+	if a := u.Check(false, seen, on, at(30)); a != nil {
+		t.Fatal("fired before the window")
+	}
+	a := u.Check(false, seen, on, at(61))
+	if a == nil || a.Type != TypeGrillUnreachable || a.Level != "error" || !strings.Contains(a.Reason, "1m1s") || !strings.Contains(a.Reason, "225") {
+		t.Fatalf("got %+v", a)
+	}
+	if u.Check(false, seen, on, at(120)) != nil {
+		t.Fatal("fired twice for one outage")
+	}
+	now := at(130)
+	if a := u.Check(true, &now, on, now); a == nil || a.Type != TypeGrillReachable {
+		t.Fatalf("recovery: %+v", a)
+	}
+	if u.Check(true, &now, on, at(135)) != nil {
+		t.Fatal("recovery fired twice")
+	}
+	if u.Check(false, &now, on, at(200)) == nil {
+		t.Fatal("did not re-arm after recovery")
+	}
+
+	fan := protocol.Status{FanModeActive: true}
+	if (&Unreachable{After: time.Minute}).Check(false, seen, fan, at(61)) == nil {
+		t.Error("should fire while cooling down in fan mode")
+	}
+	if (&Unreachable{After: time.Minute}).Check(false, seen, protocol.Status{}, at(600)) != nil {
+		t.Error("fired for a grill that was off")
+	}
+	if (&Unreachable{After: time.Minute}).Check(false, nil, on, at(600)) != nil {
+		t.Error("fired for a grill never seen")
+	}
+	if (&Unreachable{}).Check(false, seen, on, at(600)) != nil {
+		t.Error("fired while disabled")
+	}
+	if (&Unreachable{After: time.Minute}).Check(true, seen, on, at(5)) != nil {
+		t.Error("recovery fired without an outage")
 	}
 }

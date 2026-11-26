@@ -104,3 +104,56 @@ func TestStatusErrorsDoNotStopPolling(t *testing.T) {
 		t.Fatal("failed polls must not publish a status")
 	}
 }
+
+func TestHealthTracksFailuresAndRecovery(t *testing.T) {
+	g := &fakeGrill{}
+	p := New(g, 5*time.Millisecond, nil)
+	var mu sync.Mutex
+	var seen []Health
+	p.OnHealth(func(h Health, _ protocol.Status, _ bool) { mu.Lock(); seen = append(seen, h); mu.Unlock() })
+	count := func() int { mu.Lock(); defer mu.Unlock(); return len(seen) }
+
+	if h := p.Health(); h.Reachable || h.LastSeen != nil {
+		t.Fatalf("before any poll: %+v", h)
+	}
+	ctx, cancel := context.WithCancel(context.Background())
+	done := make(chan struct{})
+	go func() { p.Run(ctx); close(done) }()
+	defer func() { cancel(); <-done }()
+	waitFor := func(cond func() bool) {
+		t.Helper()
+		deadline := time.Now().Add(2 * time.Second)
+		for !cond() {
+			if time.Now().After(deadline) {
+				t.Fatal("timed out")
+			}
+			time.Sleep(time.Millisecond)
+		}
+	}
+
+	waitFor(func() bool { return p.Health().Reachable })
+	seenAt := *p.Health().LastSeen
+	g.failStatus.Store(true)
+	waitFor(func() bool { return p.Health().Failures >= 2 })
+	h := p.Health()
+	if h.Reachable || h.Error != "timeout" || h.LastSeen == nil || h.LastSeen.Before(seenAt) {
+		t.Fatalf("while failing: %+v", h)
+	}
+	g.failStatus.Store(false)
+	waitFor(func() bool { return p.Health().Reachable })
+	if h := p.Health(); h.Failures != 0 || h.Error != "" {
+		t.Fatalf("after recovery: %+v", h)
+	}
+	if count() == 0 {
+		t.Fatal("health subscribers not called")
+	}
+}
+
+func TestFailedDiscoveryIsUnhealthy(t *testing.T) {
+	g := &fakeGrill{}
+	g.discoverErrs.Store(100)
+	p := run(t, g, func() bool { return g.discovers.Load() >= 2 })
+	if h := p.Health(); h.Reachable || h.Failures < 2 || h.Error != "no grill" {
+		t.Fatalf("got %+v", h)
+	}
+}

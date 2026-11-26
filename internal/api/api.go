@@ -14,6 +14,7 @@ import (
 	"time"
 
 	"github.com/stahnma/gmg/internal/grill"
+	"github.com/stahnma/gmg/internal/poller"
 	"github.com/stahnma/gmg/internal/protocol"
 	"github.com/stahnma/gmg/internal/store"
 )
@@ -39,6 +40,7 @@ type Server struct {
 	History    History
 	Hub        *Hub
 	LastStatus func() (protocol.Status, bool) // sent to browsers on connect; optional
+	Health     func() poller.Health           // grill reachability; optional
 	Static     fs.FS                          // web UI and sounds; optional
 	Log        *slog.Logger
 	KeepAlive  time.Duration // SSE keep-alive comment interval; default 25s
@@ -69,6 +71,7 @@ func (s *Server) Handler() http.Handler {
 		return s.Grill.SetFoodTemp(ctx, f)
 	}))
 	mux.HandleFunc("GET /api/temperature/history", s.history)
+	mux.HandleFunc("GET /api/connection", s.connection)
 	mux.HandleFunc("GET /api/events", s.events)
 	mux.HandleFunc("GET /api", apiDocs)
 	mux.HandleFunc("GET /api/{$}", apiDocs)
@@ -113,6 +116,14 @@ func (s *Server) command(fn func(context.Context, *http.Request) error) http.Han
 	}
 }
 
+func (s *Server) connection(w http.ResponseWriter, _ *http.Request) {
+	if s.Health == nil {
+		notFound(w)
+		return
+	}
+	writeJSON(w, s.Health())
+}
+
 func (s *Server) history(w http.ResponseWriter, r *http.Request) {
 	since, err := strconv.ParseInt(r.URL.Query().Get("since"), 10, 64)
 	if err != nil { // the Node server returned no rows for a missing/invalid since
@@ -127,7 +138,7 @@ func (s *Server) history(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, rows)
 }
 
-// events streams `status` and `alert` events (Server-Sent Events).
+// events streams `status`, `connection` and `alert` events (Server-Sent Events).
 func (s *Server) events(w http.ResponseWriter, r *http.Request) {
 	rc := http.NewResponseController(w)
 	w.Header().Set("Content-Type", "text/event-stream")
@@ -142,6 +153,11 @@ func (s *Server) events(w http.ResponseWriter, r *http.Request) {
 			if msg, err := formatEvent("status", st); err == nil {
 				w.Write(msg)
 			}
+		}
+	}
+	if s.Health != nil {
+		if msg, err := formatEvent("connection", s.Health()); err == nil {
+			w.Write(msg)
 		}
 	}
 	if err := rc.Flush(); err != nil {
