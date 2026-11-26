@@ -108,7 +108,7 @@ func run() error {
 		Addr: ":" + cfg.HTTPPort,
 		Handler: (&api.Server{
 			Grill: client, History: db, Hub: hub, LastStatus: poll.Last, Health: poll.Health,
-			Static: web.Dist(), Log: log.With("component", "http"),
+			Static: web.Dist(), Log: log.With("component", "http"), AllowedOrigins: cfg.Origins(),
 		}).Handler(),
 		ReadHeaderTimeout: 10 * time.Second,
 	}

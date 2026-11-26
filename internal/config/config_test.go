@@ -56,3 +56,13 @@ func TestInvalidNumbers(t *testing.T) {
 		t.Fatalf("expected errors naming both variables, got %v", err)
 	}
 }
+
+func TestOrigins(t *testing.T) {
+	c, _ := Load(env(map[string]string{"GMG_CORS_ORIGINS": " https://a.example/, ,http://b.example:8080 "}))
+	if got := c.Origins(); len(got) != 2 || got[0] != "https://a.example" || got[1] != "http://b.example:8080" {
+		t.Fatalf("got %q", got)
+	}
+	if got := Default().Origins(); len(got) != 0 {
+		t.Fatalf("default: %q", got)
+	}
+}

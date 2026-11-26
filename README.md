@@ -73,6 +73,7 @@ Settings are environment variables, or the same names in a `.env` file (see [`.e
 | `GMG_ALERTS_SLACK_WEBHOOKURL` | Slack incoming-webhook URL; Slack alerts are off when unset | none |
 | `GMG_ALERTS_SLACK_CHANNEL` | Slack channel | `#alerts` |
 | `GMG_ALERTS_SLACK_USERNAME` | Slack username | `grill-bot` |
+| `GMG_CORS_ORIGINS` | Comma-separated origins (e.g. `https://grill.example.com`) allowed to call the API from a browser; `*` allows any. Same-origin requests are always allowed | none |
 | `GMG_LOG_LEVEL` | `debug`, `info`, `warn` or `error` | `info` |
 | `PORT` | HTTP port | `3001` (`80` in Docker) |
 
@@ -102,7 +103,7 @@ The running server documents its API at `/api` (also linked from the dashboard's
 | `GET` | `/api/connection` | Whether the grill is answering, and when it last did (JSON) |
 | `GET` | `/api/events` | Live [Server-Sent Events](https://developer.mozilla.org/en-US/docs/Web/API/Server-sent_events): `status` on every good poll, `connection` after every poll attempt, `alert` when one fires |
 
-Commands return `OK`. They return `400` with a message when the grill can't accept the command (for example, setting a temperature while it's off), and `500` with a message when the grill doesn't respond.
+Commands return `OK`. Browsers on another site can't send commands (`403`) unless their origin is in `GMG_CORS_ORIGINS`; this is a change from the original server, which let any web page control the grill. Clients that send no `Origin` header, like `curl` and scripts, are not affected. They return `400` with a message when the grill can't accept the command (for example, setting a temperature while it's off), and `500` with a message when the grill doesn't respond.
 
 ## Development
 
