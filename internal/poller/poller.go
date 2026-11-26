@@ -26,6 +26,11 @@ type Health struct {
 	Error     string     `json:"error,omitempty"`     // why the last poll failed
 }
 
+// RediscoverAfter is how many consecutive failed status polls make the
+// poller run discovery again, in case the grill got a new address. Discovery
+// is a no-op when a grill IP was configured.
+const RediscoverAfter = 3
+
 // Poller fetches status every interval.
 type Poller struct {
 	grill    Grill
@@ -82,9 +87,11 @@ func (p *Poller) Last() (protocol.Status, bool) {
 
 // Run polls until ctx is cancelled. Like the original server it waits one
 // interval before the first poll, and discovers the grill (when configured
-// with a broadcast address) before the first status request.
+// with a broadcast address) before the first status request. After
+// RediscoverAfter failed polls in a row it discovers again.
 func (p *Poller) Run(ctx context.Context) {
 	discovered := false
+	failedSinceDiscovery := 0
 	t := time.NewTicker(p.interval)
 	defer t.Stop()
 	for {
@@ -98,7 +105,7 @@ func (p *Poller) Run(ctx context.Context) {
 				p.failed("grill discovery failed", err)
 				continue
 			}
-			discovered = true
+			discovered, failedSinceDiscovery = true, 0
 		}
 		s, err := p.grill.Status(ctx)
 		if err != nil {
@@ -106,8 +113,12 @@ func (p *Poller) Run(ctx context.Context) {
 				return
 			}
 			p.failed("grill status failed", err)
+			if failedSinceDiscovery++; failedSinceDiscovery >= RediscoverAfter {
+				discovered = false
+			}
 			continue
 		}
+		failedSinceDiscovery = 0
 		p.succeeded(s)
 	}
 }

@@ -33,12 +33,13 @@ func invalid(format string, a ...any) error {
 // Client talks to one grill. Safe for concurrent use: every command uses its
 // own UDP socket, as the original client did.
 type Client struct {
-	mu    sync.Mutex
-	host  string
-	port  int
-	tries int
-	retry time.Duration
-	log   *slog.Logger
+	mu        sync.Mutex
+	host      string
+	broadcast string // configured broadcast address; empty when a grill IP was configured
+	port      int
+	tries     int
+	retry     time.Duration
+	log       *slog.Logger
 }
 
 // New returns a client. tries is the number of resends after the first send;
@@ -47,8 +48,16 @@ func New(host string, port, tries int, retry time.Duration, log *slog.Logger) *C
 	if log == nil {
 		log = slog.New(slog.DiscardHandler)
 	}
-	return &Client{host: host, port: port, tries: tries, retry: retry, log: log}
+	c := &Client{host: host, port: port, tries: tries, retry: retry, log: log}
+	if isBroadcast(host) {
+		c.broadcast = host
+	}
+	return c
 }
+
+// isBroadcast reports whether host means "discover the grill", using the
+// original client's rule: the address contains "255".
+func isBroadcast(host string) bool { return strings.Contains(host, "255") }
 
 // Host returns the grill host (the discovered address after Discover).
 func (c *Client) Host() string {
@@ -207,12 +216,13 @@ func (c *Client) send(ctx context.Context, cmd string, ignoreEmpty bool) ([]byte
 }
 
 // Discover broadcasts a grill-ID request and switches the client to the
-// address of the first grill that answers. It does nothing unless the host
-// is a broadcast address (contains "255"), as in the original client.
+// address of the first grill that answers. It does nothing when a grill IP
+// was configured. It can be called again later, e.g. when the grill stops
+// answering because it was given a new address.
 func (c *Client) Discover(ctx context.Context) error {
-	host := c.Host()
-	if !strings.Contains(host, "255") {
-		c.log.Debug("grill host is not a broadcast address, skipping discovery", "host", host)
+	host := c.broadcast
+	if host == "" {
+		c.log.Debug("grill host is not a broadcast address, skipping discovery", "host", c.Host())
 		return nil
 	}
 	addr, err := net.ResolveUDPAddr("udp4", net.JoinHostPort(host, strconv.Itoa(c.port)))
@@ -255,9 +265,17 @@ func (c *Client) Discover(ctx context.Context) error {
 				continue
 			}
 			c.mu.Lock()
+			old := c.host
 			c.host = u.IP.String()
 			c.mu.Unlock()
-			c.log.Info("grill discovered", "host", u.IP.String(), "id", string(msg))
+			switch {
+			case old == host:
+				c.log.Info("grill discovered", "host", u.IP.String(), "id", string(msg))
+			case old != u.IP.String():
+				c.log.Info("grill address changed", "from", old, "to", u.IP.String(), "id", string(msg))
+			default:
+				c.log.Debug("grill rediscovered at the same address", "host", old)
+			}
 			return nil
 		}
 	}
