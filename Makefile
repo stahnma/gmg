@@ -12,14 +12,26 @@ web/node_modules: web/package-lock.json
 	cd web && npm ci --no-audit --no-fund
 	@touch $@
 
-web: web/node_modules ## Build the web UI into web/dist (embedded in the server)
+# Inputs for the file targets below, so make only rebuilds what changed.
+WEB_SRC := web/index.html web/package.json web/vite.config.ts web/svelte.config.js \
+	web/tsconfig.json $(shell find web/src web/public -type f)
+GO_SRC  := go.mod go.sum $(shell find cmd internal web -name '*.go' -not -path 'web/node_modules/*')
+
+web/dist/index.html: web/node_modules $(WEB_SRC)
 	cd web && npm run build
+	@touch $@
 
-build: web ## Build bin/gmg (with the UI) and bin/gmg-emulator
-	CGO_ENABLED=0 go build $(GOFLAGS_BUILD) -o bin/gmg ./cmd/gmg
-	CGO_ENABLED=0 go build $(GOFLAGS_BUILD) -o bin/gmg-emulator ./cmd/gmg-emulator
+web: web/dist/index.html ## Build the web UI into web/dist (embedded in the server)
 
-run: build ## Build and run bin/gmg locally (reads .env; ENV_FILE=path for another file)
+bin/gmg: $(GO_SRC) web/dist/index.html
+	CGO_ENABLED=0 go build $(GOFLAGS_BUILD) -o $@ ./cmd/gmg
+
+bin/gmg-emulator: $(GO_SRC)
+	CGO_ENABLED=0 go build $(GOFLAGS_BUILD) -o $@ ./cmd/gmg-emulator
+
+build: bin/gmg bin/gmg-emulator ## Build bin/gmg (with the UI) and bin/gmg-emulator
+
+run: bin/gmg ## Build and run bin/gmg locally (reads .env; ENV_FILE=path for another file)
 	./bin/gmg $(if $(ENV_FILE),--env-file $(ENV_FILE))
 
 dev: web/node_modules ## Run emulator, server (:3001) and Vite dev server (:3000) locally
