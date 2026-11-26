@@ -25,6 +25,8 @@ type Config struct {
 	AudioEnabled     bool          // GMG_ALERTS_AUDIO_ENABLED
 	UnreachableAfter time.Duration // GMG_ALERTS_UNREACHABLE_SECONDS; 0 disables the alert
 	LogLevel         string        // GMG_LOG_LEVEL: debug, info, warn, error
+	TempDropDegrees  int           // GMG_ALERTS_TEMPDROP_DEGREES; 0 disables the alert
+	TempDropFor      time.Duration // GMG_ALERTS_TEMPDROP_MINUTES
 	GrillTempMin     int           // GMG_GRILL_TEMP_MIN: lowest grill target accepted (°F)
 	GrillTempMax     int           // GMG_GRILL_TEMP_MAX
 	FoodTempMin      int           // GMG_FOOD_TEMP_MIN: lowest food target accepted (°F)
@@ -47,6 +49,8 @@ func Default() Config {
 		SlackUsername:    "grill-bot",
 		AudioEnabled:     false,
 		UnreachableAfter: 60 * time.Second,
+		TempDropDegrees:  50,
+		TempDropFor:      5 * time.Minute,
 		GrillTempMin:     150,
 		GrillTempMax:     550,
 		FoodTempMin:      0,
@@ -92,6 +96,11 @@ func Load(getenv func(string) string) (Config, error) {
 		num(name, &n)
 		*dst = time.Duration(n) * time.Second
 	}
+	minutes := func(name string, dst *time.Duration) {
+		n := int(*dst / time.Minute)
+		num(name, &n)
+		*dst = time.Duration(n) * time.Minute
+	}
 	millis := func(name string, dst *time.Duration) {
 		n := int(*dst / time.Millisecond)
 		num(name, &n)
@@ -125,6 +134,8 @@ func Load(getenv func(string) string) (Config, error) {
 	}
 	str("GMG_CORS_ORIGINS", &c.CORSOrigins)
 	seconds("GMG_ALERTS_UNREACHABLE_SECONDS", &c.UnreachableAfter)
+	num("GMG_ALERTS_TEMPDROP_DEGREES", &c.TempDropDegrees)
+	minutes("GMG_ALERTS_TEMPDROP_MINUTES", &c.TempDropFor)
 	if v := strings.TrimSpace(getenv("GMG_ALERTS_AUDIO_ENABLED")); v != "" {
 		// Same rule as the Node server: only "true" enables audio.
 		c.AudioEnabled = strings.EqualFold(v, "true")

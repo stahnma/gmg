@@ -22,6 +22,7 @@ const (
 	TypeTargetGrillTempReached = "targetGrillTempReached"
 	TypeTargetFoodTempReached  = "targetFoodTempReached"
 	TypeLowPelletAlarmActive   = "lowPelletAlarmActive"
+	TypeGrillTempDropped       = "grillTempDropped"
 	TypeGrillUnreachable       = "grillUnreachable"
 	TypeGrillReachable         = "grillReachable"
 )
@@ -104,6 +105,62 @@ func (h *LowPellet) Check(s protocol.Status) *Alert {
 		Reason: "The grill is low on pellets. Please inspect the hopper as soon as possible!",
 		Beep:   beep(TypeLowPelletAlarmActive),
 		Level:  "warning",
+	}
+}
+
+// TempDrop fires when the grill, having reached its target, falls more than
+// Degrees below it for at least For: usually the fire went out or the
+// pellets jammed. It arms only once the grill is near the target, so warm-up
+// and raising the target don't trigger it. It fires once per drop and
+// re-arms when the grill recovers, the target changes or the grill is
+// turned off. Degrees <= 0 disables it.
+type TempDrop struct {
+	Degrees int
+	For     time.Duration
+	Now     func() time.Time // for tests; defaults to time.Now
+
+	target     int
+	armed      bool
+	belowSince time.Time
+	alerted    bool
+}
+
+// nearTarget is how close to the target counts as "reached" for arming.
+const nearTarget = 10
+
+func (h *TempDrop) Check(s protocol.Status) *Alert {
+	if h.Degrees <= 0 || !s.IsOn || s.DesiredGrillTemp == 0 {
+		*h = TempDrop{Degrees: h.Degrees, For: h.For, Now: h.Now}
+		return nil
+	}
+	if s.DesiredGrillTemp != h.target {
+		*h = TempDrop{Degrees: h.Degrees, For: h.For, Now: h.Now, target: s.DesiredGrillTemp}
+	}
+	if s.CurrentGrillTemp >= h.target-min(nearTarget, h.Degrees) {
+		h.armed, h.belowSince, h.alerted = true, time.Time{}, false
+		return nil
+	}
+	if !h.armed || s.CurrentGrillTemp > h.target-h.Degrees {
+		h.belowSince = time.Time{}
+		return nil
+	}
+	now := time.Now
+	if h.Now != nil {
+		now = h.Now
+	}
+	if h.belowSince.IsZero() {
+		h.belowSince = now()
+	}
+	if h.alerted || now().Sub(h.belowSince) < h.For {
+		return nil
+	}
+	h.alerted = true
+	return &Alert{
+		Type: TypeGrillTempDropped,
+		Name: "Grill Temperature Dropping",
+		Reason: fmt.Sprintf("The grill is at %d °F, %d °F below its target of %d °F. The fire may have gone out or the pellets jammed. Check the grill!",
+			s.CurrentGrillTemp, h.target-s.CurrentGrillTemp, h.target),
+		Level: "error",
 	}
 }
 
