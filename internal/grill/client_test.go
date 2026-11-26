@@ -178,10 +178,23 @@ func TestPowerOnRefusedInFanMode(t *testing.T) {
 	}
 }
 
-func TestInvalidTemperature(t *testing.T) {
+func TestTemperatureLimits(t *testing.T) {
 	var inv *InvalidCommandError
-	if err := newClient(1).SetGrillTemp(context.Background(), 1000); !errors.As(err, &inv) {
-		t.Fatalf("got %v", err)
+	c := newClient(1) // nothing listens: out-of-range values must fail before any send
+	for _, f := range []int{149, 551, 1000, -1} {
+		if err := c.SetGrillTemp(context.Background(), f); !errors.As(err, &inv) || !strings.Contains(inv.Msg, "between 150 and 550") {
+			t.Errorf("grill %d: %v", f, err)
+		}
+	}
+	if err := c.SetFoodTemp(context.Background(), 301); !errors.As(err, &inv) || !strings.Contains(inv.Msg, "food temperature must be between 0 and 300") {
+		t.Errorf("food: %v", err)
+	}
+	c.SetLimits(Limits{Grill: Range{Min: 180, Max: 500}, Food: Range{Min: 100, Max: 200}})
+	if err := c.SetGrillTemp(context.Background(), 170); !errors.As(err, &inv) || !strings.Contains(inv.Msg, "between 180 and 500") {
+		t.Errorf("custom limits: %v", err)
+	}
+	if c.Limits().Food.Max != 200 {
+		t.Errorf("Limits() = %+v", c.Limits())
 	}
 }
 

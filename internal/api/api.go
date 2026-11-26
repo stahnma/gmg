@@ -50,6 +50,9 @@ type Server struct {
 	// allowed to call the API from a browser; "*" allows any. Same-origin
 	// requests are always allowed.
 	AllowedOrigins []string
+	// Limits are the accepted target temperatures, served at /api/limits;
+	// optional.
+	Limits func() grill.Limits
 }
 
 // Handler returns the HTTP handler.
@@ -78,6 +81,7 @@ func (s *Server) Handler() http.Handler {
 	}))
 	mux.HandleFunc("GET /api/temperature/history", s.history)
 	mux.HandleFunc("GET /api/connection", s.connection)
+	mux.HandleFunc("GET /api/limits", s.limits)
 	mux.HandleFunc("GET /api/events", s.events)
 	mux.HandleFunc("GET /api", apiDocs)
 	mux.HandleFunc("GET /api/{$}", apiDocs)
@@ -128,6 +132,14 @@ func (s *Server) connection(w http.ResponseWriter, _ *http.Request) {
 		return
 	}
 	writeJSON(w, s.Health())
+}
+
+func (s *Server) limits(w http.ResponseWriter, _ *http.Request) {
+	l := grill.DefaultLimits()
+	if s.Limits != nil {
+		l = s.Limits()
+	}
+	writeJSON(w, l)
 }
 
 func (s *Server) history(w http.ResponseWriter, r *http.Request) {

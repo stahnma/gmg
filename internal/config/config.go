@@ -25,6 +25,10 @@ type Config struct {
 	AudioEnabled     bool          // GMG_ALERTS_AUDIO_ENABLED
 	UnreachableAfter time.Duration // GMG_ALERTS_UNREACHABLE_SECONDS; 0 disables the alert
 	LogLevel         string        // GMG_LOG_LEVEL: debug, info, warn, error
+	GrillTempMin     int           // GMG_GRILL_TEMP_MIN: lowest grill target accepted (°F)
+	GrillTempMax     int           // GMG_GRILL_TEMP_MAX
+	FoodTempMin      int           // GMG_FOOD_TEMP_MIN: lowest food target accepted (°F)
+	FoodTempMax      int           // GMG_FOOD_TEMP_MAX
 	CORSOrigins      string        // GMG_CORS_ORIGINS: comma-separated origins allowed to call the API; "*" for any
 }
 
@@ -43,6 +47,10 @@ func Default() Config {
 		SlackUsername:    "grill-bot",
 		AudioEnabled:     false,
 		UnreachableAfter: 60 * time.Second,
+		GrillTempMin:     150,
+		GrillTempMax:     550,
+		FoodTempMin:      0,
+		FoodTempMax:      300,
 		LogLevel:         "info",
 	}
 }
@@ -102,6 +110,19 @@ func Load(getenv func(string) string) (Config, error) {
 	str("GMG_ALERTS_SLACK_CHANNEL", &c.SlackChannel)
 	str("GMG_ALERTS_SLACK_USERNAME", &c.SlackUsername)
 	str("GMG_LOG_LEVEL", &c.LogLevel)
+	num("GMG_GRILL_TEMP_MIN", &c.GrillTempMin)
+	num("GMG_GRILL_TEMP_MAX", &c.GrillTempMax)
+	num("GMG_FOOD_TEMP_MIN", &c.FoodTempMin)
+	num("GMG_FOOD_TEMP_MAX", &c.FoodTempMax)
+	if c.GrillTempMin > c.GrillTempMax {
+		errs = append(errs, "GMG_GRILL_TEMP_MIN must not be above GMG_GRILL_TEMP_MAX")
+	}
+	if c.FoodTempMin > c.FoodTempMax {
+		errs = append(errs, "GMG_FOOD_TEMP_MIN must not be above GMG_FOOD_TEMP_MAX")
+	}
+	if c.GrillTempMax > 999 || c.FoodTempMax > 999 {
+		errs = append(errs, "temperature limits must be at most 999 °F (the protocol sends 3 digits)")
+	}
 	str("GMG_CORS_ORIGINS", &c.CORSOrigins)
 	seconds("GMG_ALERTS_UNREACHABLE_SECONDS", &c.UnreachableAfter)
 	if v := strings.TrimSpace(getenv("GMG_ALERTS_AUDIO_ENABLED")); v != "" {

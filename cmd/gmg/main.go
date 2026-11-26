@@ -76,6 +76,10 @@ func run() error {
 	log.Info("history database", "path", db.Path())
 
 	client := grill.New(cfg.GrillHost, cfg.GrillPort, cfg.GrillTries, cfg.GrillRetry, log.With("component", "grill"))
+	client.SetLimits(grill.Limits{
+		Grill: grill.Range{Min: cfg.GrillTempMin, Max: cfg.GrillTempMax},
+		Food:  grill.Range{Min: cfg.FoodTempMin, Max: cfg.FoodTempMax},
+	})
 	poll := poller.New(client, cfg.PollingInterval, log.With("component", "poller"))
 	hub := api.NewHub()
 
@@ -109,6 +113,7 @@ func run() error {
 		Handler: (&api.Server{
 			Grill: client, History: db, Hub: hub, LastStatus: poll.Last, Health: poll.Health,
 			Static: web.Dist(), Log: log.With("component", "http"), AllowedOrigins: cfg.Origins(),
+			Limits: client.Limits,
 		}).Handler(),
 		ReadHeaderTimeout: 10 * time.Second,
 	}

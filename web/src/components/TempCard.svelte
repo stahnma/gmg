@@ -14,6 +14,8 @@
     current,
     desired,
     enabled,
+    min,
+    max,
     onsubmit,
   }: {
     title: string
@@ -23,19 +25,22 @@
     current: number
     desired: number
     enabled: boolean
+    min: number // accepted target range, °F (from /api/limits)
+    max: number
     onsubmit: (temperature: string) => void
   } = $props()
 
   let open = $state(false)
   let value = $state('')
 
-  // Same rules and messages as the original UI.
+  // Same rules as the server: a whole number within the limits.
   const error = $derived.by(() => {
     if (value.trim() === '') return ''
     const n = Number(value)
     if (isNaN(n)) return 'Desired temperature must be a number!'
-    if (n < 0) return 'Desired temperature must be greater than 0 ℉!'
-    if (n > 500) return 'Desired temperature must be less than 500 ℉!'
+    if (!Number.isInteger(n)) return 'Desired temperature must be a whole number!'
+    if (n < min) return `Desired temperature must be at least ${min} ℉!`
+    if (n > max) return `Desired temperature must be at most ${max} ℉!`
     return ''
   })
 
@@ -70,7 +75,7 @@
 
 <Dialog {open} title="Set the desired {what.toLowerCase()} temperature" oncancel={cancel}>
   <form id="set-{what}" onsubmit={(e) => { e.preventDefault(); submit() }}>
-    <TextField bind:value label="Example: 225" placeholder="{what} temperature ℉" {error} autofocus />
+    <TextField bind:value label="{min}–{max} ℉" placeholder="{what} temperature ℉" {error} autofocus />
   </form>
   {#snippet actions()}
     <button class="btn text" type="button" onclick={cancel}>Cancel</button>

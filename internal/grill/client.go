@@ -30,6 +30,25 @@ func invalid(format string, a ...any) error {
 	return &InvalidCommandError{Msg: fmt.Sprintf(format, a...)}
 }
 
+// Range is an inclusive temperature range in °F.
+type Range struct {
+	Min int `json:"min"`
+	Max int `json:"max"`
+}
+
+// Limits are the target temperatures the client accepts. They're served to
+// the UI at /api/limits so the dialog uses the same rules.
+type Limits struct {
+	Grill Range `json:"grill"`
+	Food  Range `json:"food"`
+}
+
+// DefaultLimits match Green Mountain grills: 150-550 °F for the grill. Food
+// targets of 0 are allowed, as in the original UI.
+func DefaultLimits() Limits {
+	return Limits{Grill: Range{Min: 150, Max: 550}, Food: Range{Min: 0, Max: 300}}
+}
+
 // Client talks to one grill. Safe for concurrent use: every command uses its
 // own UDP socket, as the original client did.
 type Client struct {
@@ -39,6 +58,7 @@ type Client struct {
 	port      int
 	tries     int
 	retry     time.Duration
+	limits    Limits
 	log       *slog.Logger
 }
 
@@ -48,7 +68,7 @@ func New(host string, port, tries int, retry time.Duration, log *slog.Logger) *C
 	if log == nil {
 		log = slog.New(slog.DiscardHandler)
 	}
-	c := &Client{host: host, port: port, tries: tries, retry: retry, log: log}
+	c := &Client{host: host, port: port, tries: tries, retry: retry, limits: DefaultLimits(), log: log}
 	if isBroadcast(host) {
 		c.broadcast = host
 	}
@@ -58,6 +78,20 @@ func New(host string, port, tries int, retry time.Duration, log *slog.Logger) *C
 // isBroadcast reports whether host means "discover the grill", using the
 // original client's rule: the address contains "255".
 func isBroadcast(host string) bool { return strings.Contains(host, "255") }
+
+// SetLimits sets the accepted target temperatures (DefaultLimits by default).
+func (c *Client) SetLimits(l Limits) {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	c.limits = l
+}
+
+// Limits returns the accepted target temperatures.
+func (c *Client) Limits() Limits {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	return c.limits
+}
 
 // Host returns the grill host (the discovered address after Discover).
 func (c *Client) Host() string {
@@ -119,19 +153,21 @@ func (c *Client) powerOff(ctx context.Context, s protocol.Status) error {
 	return c.command(ctx, protocol.CmdPowerOff, func(n protocol.Status) bool { return !n.IsOn })
 }
 
-// SetGrillTemp sets the grill target (°F). The grill must be on.
+// SetGrillTemp sets the grill target (°F). The grill must be on and f
+// within the grill limits.
 func (c *Client) SetGrillTemp(ctx context.Context, f int) error {
-	return c.setTemp(ctx, "grill", f, protocol.SetGrillTemp(f), func(n protocol.Status) bool { return n.DesiredGrillTemp == f })
+	return c.setTemp(ctx, "grill", f, c.Limits().Grill, protocol.SetGrillTemp(f), func(n protocol.Status) bool { return n.DesiredGrillTemp == f })
 }
 
-// SetFoodTemp sets the food probe target (°F). The grill must be on.
+// SetFoodTemp sets the food probe target (°F). The grill must be on and f
+// within the food limits.
 func (c *Client) SetFoodTemp(ctx context.Context, f int) error {
-	return c.setTemp(ctx, "food", f, protocol.SetFoodTemp(f), func(n protocol.Status) bool { return n.DesiredFoodTemp == f })
+	return c.setTemp(ctx, "food", f, c.Limits().Food, protocol.SetFoodTemp(f), func(n protocol.Status) bool { return n.DesiredFoodTemp == f })
 }
 
-func (c *Client) setTemp(ctx context.Context, what string, f int, cmd string, ok func(protocol.Status) bool) error {
-	if f < 0 || f > 999 {
-		return invalid("Invalid %s temperature: %d", what, f)
+func (c *Client) setTemp(ctx context.Context, what string, f int, r Range, cmd string, ok func(protocol.Status) bool) error {
+	if f < r.Min || f > r.Max {
+		return invalid("The %s temperature must be between %d and %d °F, got %d", what, r.Min, r.Max, f)
 	}
 	s, err := c.Status(ctx)
 	if err != nil {

@@ -31,6 +31,7 @@ describe('GrillClient', () => {
     ['setDesiredGrillTemp', [225]],
     ['setDesiredFoodTemp', [165]],
     ['getTemperatureHistory', [0]],
+    ['getLimits', []],
   ] as const)('%s throws the response body when the request fails', async (method, args) => {
     vi.mocked(fetch).mockResolvedValue(fail('Cannot set grill temperature when the grill is off!') as unknown as Response)
     const client = new GrillClient('http://grill.local')

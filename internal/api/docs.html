@@ -41,8 +41,9 @@
   <tr><td><code><span class="method">PUT</span>/api/powertoggle</code></td><td>Toggle power.</td></tr>
   <tr><td><code><span class="method">PUT</span>/api/poweron</code></td><td>Turn the grill on.</td></tr>
   <tr><td><code><span class="method">PUT</span>/api/poweroff</code></td><td>Turn the grill off.</td></tr>
-  <tr><td><code><span class="method">PUT</span>/api/temperature/grill/{°F}</code></td><td>Set the target grill temperature. The grill must be on.</td></tr>
-  <tr><td><code><span class="method">PUT</span>/api/temperature/food/{°F}</code></td><td>Set the target food temperature. The grill must be on.</td></tr>
+  <tr><td><code><span class="method">PUT</span>/api/temperature/grill/{°F}</code></td><td>Set the target grill temperature. The grill must be on, and the value within the <a href="#limits">limits</a>.</td></tr>
+  <tr><td><code><span class="method">PUT</span>/api/temperature/food/{°F}</code></td><td>Set the target food temperature. The grill must be on, and the value within the <a href="#limits">limits</a>.</td></tr>
+  <tr><td><code><span class="method">GET</span>/api/limits</code></td><td>Accepted target temperatures (<a href="#limits">Limits</a>).</td></tr>
   <tr><td><code><span class="method">GET</span>/api/temperature/history?since={unix seconds}</code></td><td>Recorded temperatures at or after <code>since</code>, oldest first (<a href="#history">History row</a>). A missing or invalid <code>since</code> returns <code>[]</code>.</td></tr>
   <tr><td><code><span class="method">GET</span>/api/connection</code></td><td>Whether the grill is answering the server's polls (<a href="#connection">Connection</a>).</td></tr>
   <tr><td><code><span class="method">GET</span>/api/events</code></td><td>Live <a href="#events">event stream</a> (Server-Sent Events).</td></tr>
@@ -88,6 +89,10 @@
   "error": "No response from Grill after [6] command sent attempts!"
 }</code></pre>
 <p><code>reachable</code> is whether the last poll got an answer. <code>lastSeen</code> is when the last good status arrived (<code>null</code> before the first). <code>error</code> is omitted while the grill is reachable.</p>
+
+<h2 id="limits">Limits</h2>
+<pre><code>{ "grill": { "min": 150, "max": 550 }, "food": { "min": 0, "max": 300 } }</code></pre>
+<p>Inclusive, in °F. Set with <code>GMG_GRILL_TEMP_MIN</code>/<code>_MAX</code> and <code>GMG_FOOD_TEMP_MIN</code>/<code>_MAX</code>. Targets outside them get <code>400</code>.</p>
 
 <h2 id="history">History row</h2>
 <pre><code>[{ "temperature_log_id": 1, "timestamp": 1764172800, "grill_temperature": 224, "food_temperature": 140 }]</code></pre>

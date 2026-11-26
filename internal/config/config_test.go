@@ -66,3 +66,19 @@ func TestOrigins(t *testing.T) {
 		t.Fatalf("default: %q", got)
 	}
 }
+
+func TestTemperatureLimits(t *testing.T) {
+	c, err := Load(env(map[string]string{"GMG_GRILL_TEMP_MIN": "180", "GMG_GRILL_TEMP_MAX": "500", "GMG_FOOD_TEMP_MAX": "250"}))
+	if err != nil || c.GrillTempMin != 180 || c.GrillTempMax != 500 || c.FoodTempMin != 0 || c.FoodTempMax != 250 {
+		t.Fatalf("got %+v %v", c, err)
+	}
+	for _, m := range []map[string]string{
+		{"GMG_GRILL_TEMP_MIN": "600"},
+		{"GMG_FOOD_TEMP_MIN": "400"},
+		{"GMG_GRILL_TEMP_MAX": "1000"},
+	} {
+		if _, err := Load(env(m)); err == nil {
+			t.Errorf("%v: expected an error", m)
+		}
+	}
+}

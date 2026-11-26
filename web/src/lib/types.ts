@@ -39,3 +39,12 @@ export interface Point {
   x: number
   y: number | null
 }
+
+/** GET /api/limits: accepted target temperatures, °F, inclusive. */
+export interface Limits {
+  grill: { min: number; max: number }
+  food: { min: number; max: number }
+}
+
+/** Used until /api/limits answers; the server's defaults. */
+export const DEFAULT_LIMITS: Limits = { grill: { min: 150, max: 550 }, food: { min: 0, max: 300 } }
