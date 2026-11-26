@@ -139,7 +139,8 @@ func TestAPIDocs(t *testing.T) {
 		}
 		// Every endpoint is documented.
 		for _, ep := range []string{"/api/status", "/api/powertoggle", "/api/poweron", "/api/poweroff",
-			"/api/temperature/grill/", "/api/temperature/food/", "/api/temperature/history", "/api/events"} {
+			"/api/temperature/grill/", "/api/temperature/food/", "/api/temperature/history", "/api/events",
+			"/api/connection", "/api/limits"} {
 			if !strings.Contains(rec.Body.String(), ep) {
 				t.Errorf("GET %s: docs do not mention %s", path, ep)
 			}
@@ -244,6 +245,19 @@ func TestConnection(t *testing.T) {
 	rec := do(s.Handler(), "GET", "/api/connection")
 	if rec.Code != 200 || rec.Body.String() != `{"reachable":true,"lastSeen":"2025-11-26T16:00:00Z","consecutiveFailures":0}` {
 		t.Errorf("got %d %s", rec.Code, rec.Body)
+	}
+}
+
+func TestLimits(t *testing.T) {
+	_, _, s, h := setup()
+	if rec := do(h, "GET", "/api/limits"); rec.Code != 200 || rec.Body.String() != `{"grill":{"min":150,"max":550},"food":{"min":0,"max":300}}` {
+		t.Errorf("default: %d %s", rec.Code, rec.Body)
+	}
+	s.Limits = func() grill.Limits {
+		return grill.Limits{Grill: grill.Range{Min: 180, Max: 500}, Food: grill.Range{Max: 250}}
+	}
+	if rec := do(s.Handler(), "GET", "/api/limits"); rec.Body.String() != `{"grill":{"min":180,"max":500},"food":{"min":0,"max":250}}` {
+		t.Errorf("custom: %s", rec.Body)
 	}
 }
 

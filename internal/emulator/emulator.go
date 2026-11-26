@@ -11,7 +11,7 @@ import (
 )
 
 const (
-	maxGrillTemp = 500
+	maxGrillTemp = 550
 	minGrillTemp = 90  // ambient reading for the grill
 	minProbeTemp = 80  // ambient reading for the food probe
 	rampSeconds  = 500 // after a change, ramp for this many ticks, then snap to target

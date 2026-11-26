@@ -13,7 +13,7 @@
   import { GrillClient } from './lib/api'
   import { connectEvents } from './lib/events'
   import { toasts } from './lib/toasts.svelte'
-  import type { GrillAlert, GrillHealth, GrillStatus, Point } from './lib/types'
+  import { DEFAULT_LIMITS, type GrillAlert, type GrillHealth, type GrillStatus, type Limits, type Point } from './lib/types'
 
   const HISTORY_BACKFILL_S = 8 * 60 * 60
   const client = new GrillClient(window.location.origin)
@@ -32,6 +32,7 @@
   let pending = $state(0) // commands in flight
   let showTimers = $state(false)
   let showHistory = $state(false)
+  let limits = $state<Limits>(DEFAULT_LIMITS)
   let grillPoints = $state.raw<Point[]>([])
   let foodPoints = $state.raw<Point[]>([])
 
@@ -78,6 +79,12 @@
   }
 
   onMount(() => {
+    client
+      .getLimits()
+      .then((l) => {
+        if (l?.grill && l?.food) limits = l // an older server answers 404
+      })
+      .catch((err: Error) => console.warn(`Unable to load temperature limits: ${err.message}`))
     const since = Math.floor(Date.now() / 1000) - HISTORY_BACKFILL_S
     client
       .getTemperatureHistory(since)
@@ -119,6 +126,8 @@
         current={status.currentGrillTemp}
         desired={status.desiredGrillTemp}
         enabled={canChangeTemp}
+        min={limits.grill.min}
+        max={limits.grill.max}
         onsubmit={(t) => canChangeTemp && run(() => client.setDesiredGrillTemp(t))}
       />
     </div>
@@ -131,6 +140,8 @@
         current={status.currentFoodTemp}
         desired={status.desiredFoodTemp}
         enabled={canChangeTemp}
+        min={limits.food.min}
+        max={limits.food.max}
         onsubmit={(t) => canChangeTemp && run(() => client.setDesiredFoodTemp(t))}
       />
     </div>

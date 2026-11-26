@@ -1,4 +1,4 @@
-import type { HistoryRow } from './types'
+import type { HistoryRow, Limits } from './types'
 
 const trimSlash = (uri: string) => uri.replace(/[/\\]$/, '')
 
@@ -24,6 +24,12 @@ export class GrillClient {
 
   async getTemperatureHistory(since: number): Promise<HistoryRow[]> {
     const res = await fetch(`${this.base}/api/temperature/history?since=${since}`)
+    if (!res.ok) throw new Error(await res.text())
+    return res.json()
+  }
+
+  async getLimits(): Promise<Limits> {
+    const res = await fetch(`${this.base}/api/limits`)
     if (!res.ok) throw new Error(await res.text())
     return res.json()
   }

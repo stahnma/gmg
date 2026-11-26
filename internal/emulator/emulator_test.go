@@ -83,8 +83,8 @@ func TestClampsAndSnap(t *testing.T) {
 	for i := 0; i < rampSeconds+1; i++ {
 		g.Tick()
 	}
-	if s := status(t, g); s.CurrentGrillTemp != 500 || s.CurrentFoodTemp != 500 {
-		t.Fatalf("want clamp at 500/500 after ramp, got %d/%d", s.CurrentGrillTemp, s.CurrentFoodTemp)
+	if s := status(t, g); s.CurrentGrillTemp != 550 || s.CurrentFoodTemp != 550 {
+		t.Fatalf("want clamp at 550/550 after ramp, got %d/%d", s.CurrentGrillTemp, s.CurrentFoodTemp)
 	}
 	do(g, protocol.KindPowerOff) // target 0 -> cools back to ambient
 	for i := 0; i < rampSeconds+1; i++ {

@@ -7,7 +7,7 @@ describe.each(['Grill', 'Food'] as const)('%s card', (what) => {
   const renderCard = (props: Record<string, unknown> = {}) =>
     render(TempCard, {
       title: `${what} Temp ℉`, subtitle: 'x', image: '', what,
-      current: 180, desired: 225, enabled: true, onsubmit: vi.fn(), ...props,
+      current: 180, desired: 225, enabled: true, min: 150, max: 550, onsubmit: vi.fn(), ...props,
     })
 
   test('shows current and desired temperatures', () => {
@@ -39,8 +39,10 @@ describe.each(['Grill', 'Food'] as const)('%s card', (what) => {
 
   test.each([
     ['abc', 'Desired temperature must be a number!'],
-    ['501', 'Desired temperature must be less than 500 ℉!'],
-    ['-5', 'Desired temperature must be greater than 0 ℉!'],
+    ['551', 'Desired temperature must be at most 550 ℉!'],
+    ['149', 'Desired temperature must be at least 150 ℉!'],
+    ['-5', 'Desired temperature must be at least 150 ℉!'],
+    ['225.5', 'Desired temperature must be a whole number!'],
   ])('rejects %s with a validation message and blocks Set', async (input, message) => {
     const user = userEvent.setup()
     const onsubmit = vi.fn()
@@ -52,6 +54,18 @@ describe.each(['Grill', 'Food'] as const)('%s card', (what) => {
     expect(within(dialog).getByRole('button', { name: 'Set', hidden: true })).toBeDisabled()
     await user.keyboard('{Enter}')
     expect(onsubmit).not.toHaveBeenCalled()
+  })
+
+  test('uses the limits it is given', async () => {
+    const user = userEvent.setup()
+    renderCard({ min: 0, max: 300 })
+    await user.click(screen.getByRole('button', { name: button }))
+    const dialog = screen.getByRole('dialog', { hidden: true })
+    await user.type(within(dialog).getByRole('textbox', { hidden: true }), '301')
+    expect(within(dialog).getByText('Desired temperature must be at most 300 ℉!')).toBeInTheDocument()
+    await user.clear(within(dialog).getByRole('textbox', { hidden: true }))
+    await user.type(within(dialog).getByRole('textbox', { hidden: true }), '0')
+    expect(within(dialog).getByRole('button', { name: 'Set', hidden: true })).toBeEnabled()
   })
 
   test('cancel closes the dialog without submitting', async () => {

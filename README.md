@@ -68,6 +68,8 @@ Settings are environment variables, or the same names in a `.env` file (see [`.e
 | `GMG_STATUS_POLLING_INTERVAL` | Status poll interval (ms) | `5000` |
 | `GMG_DB_PATH` | Directory for the history database (`grill_data.db`) | `data` (`/data` in Docker) |
 | `GMG_DB_MAX_SIZE_MB` | Database size limit; the oldest 10% of rows are pruned when exceeded | `50` |
+| `GMG_GRILL_TEMP_MIN`, `GMG_GRILL_TEMP_MAX` | Grill target temperatures accepted (°F); others get `400` | `150`, `550` |
+| `GMG_FOOD_TEMP_MIN`, `GMG_FOOD_TEMP_MAX` | Food probe target temperatures accepted (°F) | `0`, `300` |
 | `GMG_ALERTS_AUDIO_ENABLED` | Play a sound in the browser when an alert fires (`true`/`false`); no sound files ship, see below | `false` |
 | `GMG_ALERTS_UNREACHABLE_SECONDS` | Alert when the grill hasn't answered for this long while on or in fan mode; `0` turns the alert off | `60` |
 | `GMG_ALERTS_SLACK_WEBHOOKURL` | Slack incoming-webhook URL; Slack alerts are off when unset | none |
@@ -99,6 +101,7 @@ The running server documents its API at `/api` (also linked from the dashboard's
 | `GET` | `/api/status` | Current grill status (JSON) |
 | `PUT` | `/api/powertoggle`, `/api/poweron`, `/api/poweroff` | Power |
 | `PUT` | `/api/temperature/grill/{°F}`, `/api/temperature/food/{°F}` | Set target temperatures |
+| `GET` | `/api/limits` | Accepted target temperatures (JSON) |
 | `GET` | `/api/temperature/history?since={unix seconds}` | Temperature history (JSON) |
 | `GET` | `/api/connection` | Whether the grill is answering, and when it last did (JSON) |
 | `GET` | `/api/events` | Live [Server-Sent Events](https://developer.mozilla.org/en-US/docs/Web/API/Server-sent_events): `status` on every good poll, `connection` after every poll attempt, `alert` when one fires |
