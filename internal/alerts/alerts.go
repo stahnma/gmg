@@ -22,6 +22,8 @@ const (
 	TypeTargetGrillTempReached = "targetGrillTempReached"
 	TypeTargetFoodTempReached  = "targetFoodTempReached"
 	TypeLowPelletAlarmActive   = "lowPelletAlarmActive"
+	TypeGrillUnreachable       = "grillUnreachable"
+	TypeGrillReachable         = "grillReachable"
 )
 
 // Alert is sent to the browser as JSON; field names match the original API.
@@ -105,6 +107,46 @@ func (h *LowPellet) Check(s protocol.Status) *Alert {
 	}
 }
 
+// Unreachable fires when the grill stops answering for After while it was
+// last seen on (or cooling down in fan mode), and fires a recovery alert
+// when it answers again. A grill that was off when it went quiet (for
+// example unplugged after a cook) doesn't alert. After <= 0 disables it.
+type Unreachable struct {
+	After   time.Duration
+	alerted bool
+}
+
+// Check is called after every poll attempt. lastSeen is the time of the last
+// good status (nil if none), and last is that status.
+func (u *Unreachable) Check(reachable bool, lastSeen *time.Time, last protocol.Status, now time.Time) *Alert {
+	if u.After <= 0 {
+		return nil
+	}
+	if reachable {
+		if !u.alerted {
+			return nil
+		}
+		u.alerted = false
+		return &Alert{
+			Type:   TypeGrillReachable,
+			Name:   "Grill Responding Again",
+			Reason: "The grill is responding again.",
+			Level:  "info",
+		}
+	}
+	if u.alerted || lastSeen == nil || !(last.IsOn || last.FanModeActive) || now.Sub(*lastSeen) < u.After {
+		return nil
+	}
+	u.alerted = true
+	return &Alert{
+		Type: TypeGrillUnreachable,
+		Name: "Grill Not Responding",
+		Reason: fmt.Sprintf("The grill hasn't responded for %s (last seen at %s, %d °F). Check its power and Wi-Fi.",
+			now.Sub(*lastSeen).Round(time.Second), lastSeen.Format("15:04"), last.CurrentGrillTemp),
+		Level: "error",
+	}
+}
+
 // DefaultHandlers returns the standard set of alert handlers.
 func DefaultHandlers() []Handler {
 	return []Handler{&LowPellet{}, &TargetFoodTemp{}, &TargetGrillTemp{}}
@@ -145,20 +187,25 @@ func (m *Manager) OnStatus(s protocol.Status) []Alert {
 	}
 	m.mu.Unlock()
 	for _, a := range fired {
-		m.log.Info("alert", "type", a.Type, "reason", a.Reason)
-		for _, snd := range m.senders {
-			m.wg.Add(1)
-			go func() {
-				defer m.wg.Done()
-				ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
-				defer cancel()
-				if err := snd.Send(ctx, a); err != nil {
-					m.log.Error("sending alert failed", "sender", snd.Name(), "type", a.Type, "err", err)
-				}
-			}()
-		}
+		m.Send(a)
 	}
 	return fired
+}
+
+// Send delivers a to every sender in the background.
+func (m *Manager) Send(a Alert) {
+	m.log.Info("alert", "type", a.Type, "reason", a.Reason)
+	for _, snd := range m.senders {
+		m.wg.Add(1)
+		go func() {
+			defer m.wg.Done()
+			ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
+			defer cancel()
+			if err := snd.Send(ctx, a); err != nil {
+				m.log.Error("sending alert failed", "sender", snd.Name(), "type", a.Type, "err", err)
+			}
+		}()
+	}
 }
 
 // Wait blocks until in-flight sends finish (used in tests and shutdown).

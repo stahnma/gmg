@@ -13,6 +13,7 @@ import (
 	"time"
 
 	"github.com/stahnma/gmg/internal/grill"
+	"github.com/stahnma/gmg/internal/poller"
 	"github.com/stahnma/gmg/internal/protocol"
 	"github.com/stahnma/gmg/internal/store"
 )
@@ -184,9 +185,24 @@ func TestCORS(t *testing.T) {
 	}
 }
 
+func TestConnection(t *testing.T) {
+	_, _, s, h := setup()
+	if rec := do(h, "GET", "/api/connection"); rec.Code != 404 {
+		t.Errorf("without health: %d", rec.Code)
+	}
+	seen := time.Unix(1764172800, 0).UTC()
+	s.Health = func() poller.Health { return poller.Health{Reachable: true, LastSeen: &seen} }
+	rec := do(s.Handler(), "GET", "/api/connection")
+	if rec.Code != 200 || rec.Body.String() != `{"reachable":true,"lastSeen":"2025-11-26T16:00:00Z","consecutiveFailures":0}` {
+		t.Errorf("got %d %s", rec.Code, rec.Body)
+	}
+}
+
 func TestEvents(t *testing.T) {
 	_, _, s, h := setup()
 	s.LastStatus = func() (protocol.Status, bool) { return protocol.Status{State: "on", CurrentGrillTemp: 111}, true }
+	s.Health = func() poller.Health { return poller.Health{Failures: 3, Error: "timeout"} }
+	h = s.Handler()
 	srv := httptest.NewServer(h)
 	defer srv.Close()
 
@@ -219,6 +235,9 @@ func TestEvents(t *testing.T) {
 
 	if ev, data := next(); ev != "status" || !strings.Contains(data, `"currentGrillTemp":111`) {
 		t.Fatalf("initial event %s %s", ev, data)
+	}
+	if ev, data := next(); ev != "connection" || !strings.Contains(data, `"reachable":false`) || !strings.Contains(data, `"consecutiveFailures":3`) {
+		t.Fatalf("initial connection event %s %s", ev, data)
 	}
 	for s.Hub.Clients() == 0 {
 		time.Sleep(time.Millisecond)

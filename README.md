@@ -69,6 +69,7 @@ Settings are environment variables, or the same names in a `.env` file (see [`.e
 | `GMG_DB_PATH` | Directory for the history database (`grill_data.db`) | `data` (`/data` in Docker) |
 | `GMG_DB_MAX_SIZE_MB` | Database size limit; the oldest 10% of rows are pruned when exceeded | `50` |
 | `GMG_ALERTS_AUDIO_ENABLED` | Play a sound in the browser when an alert fires (`true`/`false`); no sound files ship, see below | `false` |
+| `GMG_ALERTS_UNREACHABLE_SECONDS` | Alert when the grill hasn't answered for this long while on or in fan mode; `0` turns the alert off | `60` |
 | `GMG_ALERTS_SLACK_WEBHOOKURL` | Slack incoming-webhook URL; Slack alerts are off when unset | none |
 | `GMG_ALERTS_SLACK_CHANNEL` | Slack channel | `#alerts` |
 | `GMG_ALERTS_SLACK_USERNAME` | Slack username | `grill-bot` |
@@ -84,6 +85,9 @@ No alert sounds are included. To use audio alerts, add `targetGrillTempReached.m
 | Target Grill Temperature Reached | The grill reaches its target. Fires again for a new target, or after the grill has been turned off |
 | Target Food Temperature Reached | The food probe reaches its target. Same re-arming as above |
 | Grill Pellet Alarm | The grill reports low pellets. Fires again each time the alarm clears and comes back |
+| Grill Not Responding | The grill was on (or cooling down in fan mode) and hasn't answered for `GMG_ALERTS_UNREACHABLE_SECONDS`. A grill that was off when it went quiet doesn't alert. "Grill Responding Again" follows when it comes back |
+
+While the grill isn't answering, the dashboard dims the readings, shows when they were last updated and disables the controls.
 
 ## API
 
@@ -95,7 +99,8 @@ The running server documents its API at `/api` (also linked from the dashboard's
 | `PUT` | `/api/powertoggle`, `/api/poweron`, `/api/poweroff` | Power |
 | `PUT` | `/api/temperature/grill/{°F}`, `/api/temperature/food/{°F}` | Set target temperatures |
 | `GET` | `/api/temperature/history?since={unix seconds}` | Temperature history (JSON) |
-| `GET` | `/api/events` | Live [Server-Sent Events](https://developer.mozilla.org/en-US/docs/Web/API/Server-sent_events): `status` on every poll, `alert` when one fires |
+| `GET` | `/api/connection` | Whether the grill is answering, and when it last did (JSON) |
+| `GET` | `/api/events` | Live [Server-Sent Events](https://developer.mozilla.org/en-US/docs/Web/API/Server-sent_events): `status` on every good poll, `connection` after every poll attempt, `alert` when one fires |
 
 Commands return `OK`. They return `400` with a message when the grill can't accept the command (for example, setting a temperature while it's off), and `500` with a message when the grill doesn't respond.
 

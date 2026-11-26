@@ -11,6 +11,14 @@ export interface GrillStatus {
   lowPelletAlarmActive: boolean
 }
 
+/** Whether the grill is answering the server's polls (`connection` event). */
+export interface GrillHealth {
+  reachable: boolean
+  lastSeen: string | null // RFC 3339; null until the first good status
+  consecutiveFailures: number
+  error?: string
+}
+
 export interface GrillAlert {
   type: string
   name: string

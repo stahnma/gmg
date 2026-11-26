@@ -59,6 +59,26 @@ describe('App', () => {
     expect(screen.getByRole('button', { name: 'Power' })).toBeEnabled()
   })
 
+  test('marks readings stale and disables controls when the grill stops responding', async () => {
+    render(App)
+    const lastSeen = new Date(Date.now() - 3 * 60_000).toISOString()
+    await act(() => {
+      FakeEventSource.last.onopen!()
+      FakeEventSource.last.emit('status', status())
+      FakeEventSource.last.emit('connection', { reachable: false, lastSeen, consecutiveFailures: 4, error: 'timeout' })
+    })
+    expect(screen.getByRole('alert')).toHaveTextContent('Grill not responding.')
+    expect(screen.getByRole('alert')).toHaveTextContent('3 min ago')
+    expect(screen.getByText('Current: 180 ℉')).toBeInTheDocument() // last known reading stays visible
+    expect(screen.getByRole('button', { name: 'Set Grill Temperature' })).toBeDisabled()
+    expect(screen.getByRole('button', { name: 'Power' })).toBeDisabled()
+    expect(screen.getByRole('img', { name: 'Grill not connected' })).toBeInTheDocument()
+
+    await act(() => FakeEventSource.last.emit('connection', { reachable: true, lastSeen: new Date().toISOString(), consecutiveFailures: 0 }))
+    expect(screen.queryByRole('alert')).not.toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Set Grill Temperature' })).toBeEnabled()
+  })
+
   test.each([
     ['info', 'Target Food Temperature Reached', 'Food temperature has reached target temperature of 165'],
     ['warning', 'Grill Pellet Alarm', 'The grill is low on pellets.'],

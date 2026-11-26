@@ -6,13 +6,14 @@
   import HistoryCard from './components/HistoryCard.svelte'
   import Connecting from './components/Connecting.svelte'
   import Toasts from './components/Toasts.svelte'
+  import StaleBanner from './components/StaleBanner.svelte'
   import BottomNav from './components/BottomNav.svelte'
   import grillImage from './assets/grill.png'
   import foodImage from './assets/food.png'
   import { GrillClient } from './lib/api'
   import { connectEvents } from './lib/events'
   import { toasts } from './lib/toasts.svelte'
-  import type { GrillAlert, GrillStatus, Point } from './lib/types'
+  import type { GrillAlert, GrillHealth, GrillStatus, Point } from './lib/types'
 
   const HISTORY_BACKFILL_S = 8 * 60 * 60
   const client = new GrillClient(window.location.origin)
@@ -22,7 +23,12 @@
     desiredFoodTemp: 0, fanModeActive: false, lowPelletAlarmActive: false,
   })
   let connected = $state(false) // live event stream
-  let grillConnected = $state(false) // at least one status received
+  let hasStatus = $state(false) // at least one status received
+  let health = $state<GrillHealth | null>(null) // null until the server says
+  // The grill is answering. Older servers send no `connection` events, so
+  // until one arrives, a status counts as connected.
+  const grillConnected = $derived(hasStatus && (health?.reachable ?? true))
+  const stale = $derived(hasStatus && health?.reachable === false)
   let pending = $state(0) // commands in flight
   let showTimers = $state(false)
   let showHistory = $state(false)
@@ -53,7 +59,11 @@
     grillPoints = [...grillPoints, { x: now, y: s.currentGrillTemp }]
     foodPoints = [...foodPoints, { x: now, y: s.currentFoodTemp }]
     status = s
-    grillConnected = true
+    hasStatus = true
+  }
+
+  function onHealth(h: GrillHealth) {
+    health = h
   }
 
   async function run(command: () => Promise<void>) {
@@ -80,13 +90,14 @@
       })
       .catch((err: Error) => console.warn(`Unable to load history: ${err.message}`))
 
-    return connectEvents('/api/events', { onStatus, onAlert, onConnectionChange: (c) => (connected = c) })
+    return connectEvents('/api/events', { onStatus, onAlert, onHealth, onConnectionChange: (c) => (connected = c) })
   })
 </script>
 
 <div class="app">
   <div class="container">
     {#if !connected}<Connecting />{/if}
+    {#if stale && health}<StaleBanner lastSeen={health.lastSeen} error={health.error} />{/if}
     <Toolbar
       powerOn={status.isOn}
       timersOn={showTimers}
@@ -99,7 +110,7 @@
       ontimers={() => !loading && (showTimers = !showTimers)}
       onhistory={() => !loading && (showHistory = !showHistory)}
     />
-    <div class="card">
+    <div class="card" class:stale>
       <TempCard
         title="Grill Temp ℉"
         subtitle="Set the temperature of the grill"
@@ -111,7 +122,7 @@
         onsubmit={(t) => canChangeTemp && run(() => client.setDesiredGrillTemp(t))}
       />
     </div>
-    <div class="card">
+    <div class="card" class:stale>
       <TempCard
         title="Food Temp ℉"
         subtitle="Set the temperature of the food"
@@ -139,6 +150,7 @@
     margin: 1.5rem auto;
   }
   .card { margin: 1.5rem 0 0.5rem; padding: 0 2rem; }
+  .card.stale { opacity: 0.5; }
   @media (max-width: 600px) {
     .card { padding: 0 0.5rem; }
   }

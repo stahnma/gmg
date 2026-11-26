@@ -96,10 +96,18 @@ func run() error {
 		}
 	})
 
+	unreachable := &alerts.Unreachable{After: cfg.UnreachableAfter}
+	poll.OnHealth(func(h poller.Health, last protocol.Status, ok bool) {
+		hub.Publish("connection", h)
+		if a := unreachable.Check(h.Reachable, h.LastSeen, last, time.Now()); a != nil {
+			alertManager.Send(*a)
+		}
+	})
+
 	srv := &http.Server{
 		Addr: ":" + cfg.HTTPPort,
 		Handler: (&api.Server{
-			Grill: client, History: db, Hub: hub, LastStatus: poll.Last,
+			Grill: client, History: db, Hub: hub, LastStatus: poll.Last, Health: poll.Health,
 			Static: web.Dist(), Log: log.With("component", "http"),
 		}).Handler(),
 		ReadHeaderTimeout: 10 * time.Second,
