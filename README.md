@@ -72,6 +72,8 @@ Settings are environment variables, or the same names in a `.env` file (see [`.e
 | `GMG_FOOD_TEMP_MIN`, `GMG_FOOD_TEMP_MAX` | Food probe target temperatures accepted (°F) | `0`, `300` |
 | `GMG_ALERTS_AUDIO_ENABLED` | Play a sound in the browser when an alert fires (`true`/`false`); no sound files ship, see below | `false` |
 | `GMG_ALERTS_UNREACHABLE_SECONDS` | Alert when the grill hasn't answered for this long while on or in fan mode; `0` turns the alert off | `60` |
+| `GMG_ALERTS_TEMPDROP_DEGREES` | Alert when the grill falls this far below its target after reaching it; `0` turns the alert off | `50` |
+| `GMG_ALERTS_TEMPDROP_MINUTES` | ...for at least this long | `5` |
 | `GMG_ALERTS_SLACK_WEBHOOKURL` | Slack incoming-webhook URL; Slack alerts are off when unset | none |
 | `GMG_ALERTS_SLACK_CHANNEL` | Slack channel | `#alerts` |
 | `GMG_ALERTS_SLACK_USERNAME` | Slack username | `grill-bot` |
@@ -88,6 +90,7 @@ No alert sounds are included. To use audio alerts, add `targetGrillTempReached.m
 | Target Grill Temperature Reached | The grill reaches its target. Fires again for a new target, or after the grill has been turned off |
 | Target Food Temperature Reached | The food probe reaches its target. Same re-arming as above |
 | Grill Pellet Alarm | The grill reports low pellets. Fires again each time the alarm clears and comes back |
+| Grill Temperature Dropping | After reaching its target, the grill stays `GMG_ALERTS_TEMPDROP_DEGREES` below it for `GMG_ALERTS_TEMPDROP_MINUTES`: usually the fire went out or the pellets jammed. Not during warm-up or after raising the target. Fires again after the grill recovers |
 | Grill Not Responding | The grill was on (or cooling down in fan mode) and hasn't answered for `GMG_ALERTS_UNREACHABLE_SECONDS`. A grill that was off when it went quiet doesn't alert. "Grill Responding Again" follows when it comes back |
 
 While the grill isn't answering, the dashboard dims the readings, shows when they were last updated and disables the controls.

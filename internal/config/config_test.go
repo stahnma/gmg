@@ -26,7 +26,7 @@ func TestFromEnvironment(t *testing.T) {
 		"PORT": "80", "GMG_GRILL_HOST": "192.168.1.50", "GMG_GRILL_PORT": "9000", "GMG_GRILL_TRIES": "3",
 		"GMG_GRILL_RETRYMS": "1500", "GMG_STATUS_POLLING_INTERVAL": "2000", "GMG_DB_PATH": "/data",
 		"GMG_DB_MAX_SIZE_MB": "10", "GMG_ALERTS_SLACK_WEBHOOKURL": "https://hooks.slack.com/services/x",
-		"GMG_ALERTS_UNREACHABLE_SECONDS": "90",
+		"GMG_ALERTS_UNREACHABLE_SECONDS": "90", "GMG_ALERTS_TEMPDROP_DEGREES": "40", "GMG_ALERTS_TEMPDROP_MINUTES": "10",
 	}))
 	if err != nil {
 		t.Fatal(err)
@@ -36,6 +36,7 @@ func TestFromEnvironment(t *testing.T) {
 	want.GrillRetry, want.PollingInterval = 1500*time.Millisecond, 2*time.Second
 	want.DBPath, want.DBMaxSizeMB, want.SlackWebhookURL = "/data", 10, "https://hooks.slack.com/services/x"
 	want.UnreachableAfter = 90 * time.Second
+	want.TempDropDegrees, want.TempDropFor = 40, 10*time.Minute
 	if c != want {
 		t.Fatalf("got  %+v\nwant %+v", c, want)
 	}

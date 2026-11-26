@@ -88,7 +88,10 @@ func run() error {
 		senders = append(senders, alerts.SlackSender{WebhookURL: cfg.SlackWebhookURL, Channel: cfg.SlackChannel, Username: cfg.SlackUsername})
 		log.Info("slack alerts enabled", "channel", cfg.SlackChannel)
 	}
-	alertManager := alerts.NewManager(alerts.DefaultHandlers(), senders, log.With("component", "alerts"))
+	handlers := append(alerts.DefaultHandlers(),
+		&alerts.TempDrop{Degrees: cfg.TempDropDegrees, For: cfg.TempDropFor},
+	)
+	alertManager := alerts.NewManager(handlers, senders, log.With("component", "alerts"))
 
 	poll.Subscribe(func(s protocol.Status) { hub.Publish("status", s) })
 	poll.Subscribe(func(s protocol.Status) { alertManager.OnStatus(s) })
