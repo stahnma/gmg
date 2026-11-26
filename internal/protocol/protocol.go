@@ -67,6 +67,9 @@ type Status struct {
 	DesiredFoodTemp      int    `json:"desiredFoodTemp"`
 	FanModeActive        bool   `json:"fanModeActive"`
 	LowPelletAlarmActive bool   `json:"lowPelletAlarmActive"`
+	// Added by the Go server: false when no food probe is plugged in (the
+	// grill then reports 557 or more, and currentFoodTemp is 0).
+	FoodProbeConnected bool `json:"foodProbeConnected"`
 }
 
 // ParseStatus decodes a status response from the grill.
@@ -91,7 +94,8 @@ func ParseStatus(b []byte) (Status, error) {
 	s.FanModeActive = s.State == "fan mode"
 	s.CurrentGrillTemp = u16(offGrillTemp)
 	s.CurrentFoodTemp = u16(offProbeTemp)
-	if s.CurrentFoodTemp >= foodProbeMissing { // no probe connected
+	s.FoodProbeConnected = s.CurrentFoodTemp < foodProbeMissing
+	if !s.FoodProbeConnected {
 		s.CurrentFoodTemp = 0
 	}
 	if s.IsOn { // targets are meaningless while the grill is off

@@ -137,7 +137,7 @@
         subtitle="Set the temperature of the food"
         image={foodImage}
         what="Food"
-        current={status.currentFoodTemp}
+        current={status.foodProbeConnected === false ? null : status.currentFoodTemp}
         desired={status.desiredFoodTemp}
         enabled={canChangeTemp}
         min={limits.food.min}

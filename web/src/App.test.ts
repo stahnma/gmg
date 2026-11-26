@@ -59,6 +59,16 @@ describe('App', () => {
     expect(screen.getByRole('button', { name: 'Power' })).toBeEnabled()
   })
 
+  test('shows "No probe" when the food probe is unplugged', async () => {
+    render(App)
+    await act(() => {
+      FakeEventSource.last.onopen!()
+      FakeEventSource.last.emit('status', status({ foodProbeConnected: false, currentFoodTemp: 0 }))
+    })
+    expect(screen.getByText('Current: No probe')).toBeInTheDocument()
+    expect(screen.getByText('Current: 180 ℉')).toBeInTheDocument()
+  })
+
   test('marks readings stale and disables controls when the grill stops responding', async () => {
     render(App)
     const lastSeen = new Date(Date.now() - 3 * 60_000).toISOString()

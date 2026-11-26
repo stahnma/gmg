@@ -21,6 +21,11 @@ describe.each(['Grill', 'Food'] as const)('%s card', (what) => {
     expect(screen.getByText('Desired: Not set')).toBeInTheDocument()
   })
 
+  test('shows "No probe" without a reading', () => {
+    renderCard({ current: null })
+    expect(screen.getByText('Current: No probe')).toBeInTheDocument()
+  })
+
   test('disables the set button when not enabled', () => {
     renderCard({ enabled: false })
     expect(screen.getByRole('button', { name: button })).toBeDisabled()

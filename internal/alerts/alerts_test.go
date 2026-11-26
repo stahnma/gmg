@@ -291,3 +291,36 @@ func TestTempDrop(t *testing.T) {
 		t.Fatalf("alert %+v", a)
 	}
 }
+
+func TestProbeDisconnected(t *testing.T) {
+	probe := func(connected bool, target int) protocol.Status {
+		s := protocol.Status{IsOn: true, DesiredFoodTemp: target, FoodProbeConnected: connected}
+		if connected {
+			s.CurrentFoodTemp = 140
+		}
+		return s
+	}
+	off := protocol.Status{}
+	tests := []struct {
+		name     string
+		statuses []protocol.Status
+		want     []bool
+	}{
+		{"fires when unplugged mid-cook", []protocol.Status{probe(true, 165), probe(false, 165), probe(false, 165)}, []bool{false, true, false}},
+		{"re-arms when plugged back in", []protocol.Status{probe(true, 165), probe(false, 165), probe(true, 165), probe(false, 165)}, []bool{false, true, false, true}},
+		{"not without a food target", []protocol.Status{probe(true, 0), probe(false, 0)}, []bool{false, false}},
+		{"not when there never was a probe", []protocol.Status{probe(false, 165), probe(false, 165)}, []bool{false, false}},
+		{"not on the first status", []protocol.Status{probe(false, 165)}, []bool{false}},
+		{"not across a power cycle", []protocol.Status{probe(true, 165), off, probe(false, 165)}, []bool{false, false, false}},
+	}
+	for _, tt := range tests {
+		if got := fires(&ProbeDisconnected{}, tt.statuses...); !eq(got, tt.want) {
+			t.Errorf("%s: got %v, want %v", tt.name, got, tt.want)
+		}
+	}
+	h := &ProbeDisconnected{}
+	h.Check(probe(true, 165))
+	if a := h.Check(probe(false, 165)); a == nil || a.Level != "warning" || !strings.Contains(a.Reason, "165 °F") {
+		t.Fatalf("alert %+v", a)
+	}
+}

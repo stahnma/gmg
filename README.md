@@ -90,6 +90,7 @@ No alert sounds are included. To use audio alerts, add `targetGrillTempReached.m
 | Target Grill Temperature Reached | The grill reaches its target. Fires again for a new target, or after the grill has been turned off |
 | Target Food Temperature Reached | The food probe reaches its target. Same re-arming as above |
 | Grill Pellet Alarm | The grill reports low pellets. Fires again each time the alarm clears and comes back |
+| Food Probe Disconnected | The food probe stops reporting while the grill is on and a food target is set. Fires again after it's plugged back in |
 | Grill Temperature Dropping | After reaching its target, the grill stays `GMG_ALERTS_TEMPDROP_DEGREES` below it for `GMG_ALERTS_TEMPDROP_MINUTES`: usually the fire went out or the pellets jammed. Not during warm-up or after raising the target. Fires again after the grill recovers |
 | Grill Not Responding | The grill was on (or cooling down in fan mode) and hasn't answered for `GMG_ALERTS_UNREACHABLE_SECONDS`. A grill that was off when it went quiet doesn't alert. "Grill Responding Again" follows when it comes back |
 

@@ -22,7 +22,7 @@
     subtitle: string
     image: string
     what: 'Grill' | 'Food'
-    current: number
+    current: number | null // null: no probe
     desired: number
     enabled: boolean
     min: number // accepted target range, °F (from /api/limits)
@@ -61,7 +61,7 @@
   <Readings>
     <div class="reading">
       <span class="avatar"><Icon name="thermostat" /></span>
-      <span>Current: {current} ℉</span>
+      <span>{current === null ? 'Current: No probe' : `Current: ${current} ℉`}</span>
     </div>
     <div class="reading">
       <span class="avatar"><Icon name="thermostat" /></span>
